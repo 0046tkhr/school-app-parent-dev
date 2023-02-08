@@ -1,3 +1,4 @@
+import os
 from contextlib import contextmanager
 import logging
 from flask import Flask, request
@@ -9,6 +10,9 @@ from database_setting import ENGINE
 from database_setting import session
 from models.m_parents import *
 import hashlib
+import boto3
+dynamodb = boto3.resource('dynamodb')
+TABLE_PARENT_STUDENT_DELIVERY = os.environ['TABLE_PARENT_STUDENT_DELIVERY']
 
 @contextmanager
 def session_scope():
@@ -27,6 +31,8 @@ app = Flask(__name__)
 CORS(app)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+
 @app.route("/api/schoolappParent/dev", methods=["GET"])
 def migration():
     with session_scope() as session:
@@ -42,6 +48,7 @@ def migration():
         "statusCode": 200,
     }
     return response
+
 @app.route("/api/schoolappParent/login", methods=["POST"])
 def login():
     event = request.get_json()
@@ -52,8 +59,6 @@ def login():
     password_hashed = hashlib.sha256(password.encode("utf-8")).hexdigest()
     print('password_hashed', password_hashed)
     with session_scope() as session:
-        # テーブルを作成する
-        # run_migration(session)
         print('p')
         table_name = ENGINE.table_names()
         print("table_name", table_name)
@@ -74,4 +79,38 @@ def login():
             "login_code": login_code,
         }
     }
+    return response
+
+@app.route("/api/schoolappParent/searchDelivery", methods=["POST"])
+def search_delivery():
+    event = request.get_json()
+    print('event', event)
+    parent_id = event['parent_id']
+    print('parent_id', parent_id)
+    student_id = event['student_id']
+    print('student_id', student_id)
+
+    # 生徒に紐づく配信情報を取得する
+    print("dynamodb", dynamodb)
+    print(TABLE_PARENT_STUDENT_DELIVERY)
+    table = dynamodb.Table(TABLE_PARENT_STUDENT_DELIVERY)
+    print("table", table)
+    db_response = "syokiti"
+    try:
+        db_response = table.get_item(Key={ "parent_id": parent_id, "student_id": student_id })
+    except Exception as error:
+        print(error)
+    print('db_response', db_response)
+    if "Item" in db_response:
+        item = db_response["Item"]
+        print('item', item)
+        response = {
+            "statusCode": 200,
+            "delivery": item['delivery_id']
+        }
+    else:
+        response = {
+            "statusCode": 500,
+            "message": "invalid value"
+        }
     return response
