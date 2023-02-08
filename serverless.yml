@@ -1,0 +1,100 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+service: ${env:ENVIRONMENT_NAME}
+# app and org for use with dashboard.serverless.com
+#app: your-app-name
+#org: your-org-name
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+frameworkVersion: '3'
+provider:
+  name: aws
+  runtime: python3.8
+  stage: ${opt:stage, 'dev'}
+  region: ap-northeast-1
+# envの利用設定
+useDotenv: true
+custom:
+  # environment:
+  #   dev:
+  #     BUCKET_NAME: ${env:SERVERLESS-LAYERS_BUCKETNAME}
+  wsgi:
+    app: src/main.app
+    packRequirements: false
+  pythonRequirements:
+    # dockerizePip: non-linux
+    layer: true
+  # serverless-layers:
+  #   layersDeploymentBucket: ${env:SERVERLESS-LAYERS_BUCKETNAME}
+# you can overwrite defaults here
+#  stage: dev
+#  region: us-east-1
+# you can add statements to the Lambda function's IAM Role here
+#  iam:
+#    role:
+#      statements:
+#        - Effect: "Allow"
+#          Action:
+#            - "s3:ListBucket"
+#          Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
+#        - Effect: "Allow"
+#          Action:
+#            - "s3:PutObject"
+#          Resource:
+#            Fn::Join:
+#              - ""
+#              - - "arn:aws:s3:::"
+#                - "Ref" : "ServerlessDeploymentBucket"
+#                - "/*"
+# you can define service wide environment variables here
+#  environment:
+#    variable1: value1
+# you can add packaging information here
+#package:
+#  patterns:
+#    - '!exclude-me.py'
+#    - '!exclude-me-dir/**'
+#    - include-me.py
+#    - include-me-dir/**
+functions:
+  SchoolappParentApiFunction:
+    # 実行するハンドラーのパス
+    handler: wsgi_handler.handler
+    # タイムアウト設定
+    timeout: 900
+    # 使用メモリー設定
+    memorySize: 128
+    # LayerとFunctionの紐づけの設定。
+    layers:
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
+      - http: 'ANY api/schoolappParent/{proxy+}'
+    cors: true
+    environment:
+      MYSQL_DB_NAME: ${env:MYSQL_DB_NAME}
+      MYSQL_PROXY_ENDPOINT: ${env:MYSQL_PROXY_ENDPOINT}
+      MYSQL_PORT: ${env:MYSQL_PORT}
+      MYSQL_USERNAME: ${env:MYSQL_USERNAME}
+      MYSQL_PASSWORD: ${env:MYSQL_PASSWORD}
+      # LINE_MESSAGING_CHANNEL_ACCESS_TOKEN: ${env:LINE_MESSAGING_CHANNEL_ACCESS_TOKEN}
+    vpc:
+      securityGroupIds:
+        - sg-9541dad7
+      subnetIds:
+        - subnet-3118a779
+        - subnet-bfce4f94
+        - subnet-f3ae46a9
+plugins:
+  - serverless-python-requirements
+  - serverless-wsgi
+  # - serverless-layers
