@@ -35,15 +35,13 @@ logger.setLevel(logging.INFO)
 
 @app.route("/api/schoolappParent/dev", methods=["GET"])
 def migration():
+    print('dev')
     with session_scope() as session:
         # テーブルを作成する
         # run_migration(session)
         print('p')
         tables = ENGINE.table_names()
         print("tables", tables)
-        parents= session.query(Parents).all()
-        for parent in parents:
-            print(parent.last_name + parent.first_name)
     response = {
         "statusCode": 200,
     }
@@ -51,38 +49,58 @@ def migration():
 
 @app.route("/api/schoolappParent/login", methods=["POST"])
 def login():
+    print('login')
     event = request.get_json()
-    # event = json.loads(request.data, strict=False)
     print('event', event)
+
+    # ログイン情報の取得
     id = event['id']
     password = event['password']
+    print('id', id)
+    print('password', password)
+
+    # パスワードのハッシュ化
     password_hashed = hashlib.sha256(password.encode("utf-8")).hexdigest()
     print('password_hashed', password_hashed)
+
+    # ログイン情報から、紐づく保護者を検索
     with session_scope() as session:
-        print('p')
-        table_name = ENGINE.table_names()
-        print("table_name", table_name)
-        # parents = session.query(Parents).all()
-        parents = session.query(Parents).\
+        parent = session.query(Parents).\
             filter(Parents.parent_id == id, Parents.password == password_hashed).\
-            all()
-        print("parents", parents)
-        for parent in parents:
-            print("parent", parent.last_name + parent.first_name)
-        if len(parents) > 0:
-            login_code = 1
-        else:
-            login_code = 0
-    response = {
-        "statusCode": 200,
-        "data": {
-            "login_code": login_code,
+            first()
+        print('parent', parent)
+
+        # 保護者情報として保存
+        parent_info = {
+            "parent_id": parent.parent_id,
+            "school_id": parent.school_id,
+            "last_name": parent.last_name,
+            "first_name": parent.first_name,
+            "last_name_kana": parent.last_name_kana,
+            "first_name_kana": parent.first_name_kana,
         }
-    }
+
+        # login_codeを用意
+        login_code = 1 if parent else 0
+
+    # login_codeが1ならログイン成功
+    if login_code == 1:
+        response = {
+            "statusCode": 200,
+            "login_code": login_code,
+            "parent_info": parent_info
+        }
+    else:
+        response ={
+            "statusCode": 500,
+        }
+    
+    print('response', response)
     return response
 
 @app.route("/api/schoolappParent/searchDelivery", methods=["POST"])
 def search_delivery():
+    print('search_delivery')
     event = request.get_json()
     print('event', event)
     parent_id = event['parent_id']
@@ -111,6 +129,5 @@ def search_delivery():
     else:
         response = {
             "statusCode": 500,
-            "message": "invalid value"
         }
     return response
