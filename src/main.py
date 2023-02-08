@@ -1,15 +1,19 @@
 import os
 from contextlib import contextmanager
 import logging
+
 from flask import Flask, request
 from flask_cors import CORS
-import json
 # import requests
 # from migrations.migration import run_migration
 from database_setting import ENGINE
 from database_setting import session
 from models.m_parents import *
+from models.m_students import *
+
+import json
 import hashlib
+
 import boto3
 dynamodb = boto3.resource('dynamodb')
 TABLE_PARENT_STUDENT_DELIVERY = os.environ['TABLE_PARENT_STUDENT_DELIVERY']
@@ -64,6 +68,7 @@ def login():
     print('password_hashed', password_hashed)
 
     # ログイン情報から、紐づく保護者を検索
+    parent_info = {}
     with session_scope() as session:
         parent = session.query(Parents).\
             filter(Parents.parent_id == id, Parents.password == password_hashed).\
@@ -78,10 +83,32 @@ def login():
             "first_name": parent.first_name,
             "last_name_kana": parent.last_name_kana,
             "first_name_kana": parent.first_name_kana,
+            "uid_1": parent.uid_1,
+            "uid_2": parent.uid_2
         }
 
         # login_codeを用意
         login_code = 1 if parent else 0
+
+    # 保護者情報から、紐づく生徒を検索
+    with session_scope() as session:
+        students = session.query(Students).\
+            filter(Students.parent_id == parent_info['parent_id']).\
+            all()
+        print('students', students)
+        # 保護者情報に追加
+        parent_info['students'] = []
+        for student in students:
+            parent_info['students'].append({
+                "student_id": student.student_id,
+                "class_name": student.class_name,
+                "grade": student.grade,
+                "number": student.number,
+                "last_name": student.last_name,
+                "first_name": student.first_name,
+                "last_name_kana": student.last_name_kana,
+                "first_name_kana": student.first_name_kana,
+            })
 
     # login_codeが1ならログイン成功
     if login_code == 1:
@@ -94,7 +121,7 @@ def login():
         response ={
             "statusCode": 500,
         }
-    
+
     print('response', response)
     return response
 
