@@ -48,9 +48,9 @@ def login():
     # event = json.loads(request.data, strict=False)
     print('event', event)
     id = event['id']
-    passward = event['passward']
-    passward_hashed = hashlib.sha256(passward.encode("utf-8")).hexdigest()
-    print('passward_hashed', passward_hashed)
+    password = event['password']
+    password_hashed = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    print('password_hashed', password_hashed)
     with session_scope() as session:
         # テーブルを作成する
         # run_migration(session)
@@ -59,7 +59,7 @@ def login():
         print("table_name", table_name)
         # parents = session.query(Parents).all()
         parents = session.query(Parents).\
-            filter(Parents.parent_id == id, Parents.password == passward_hashed).\
+            filter(Parents.parent_id == id, Parents.password == password_hashed).\
             all()
         print("parents", parents)
         for parent in parents:
