@@ -11,12 +11,11 @@ from database_setting import session
 from models.m_parents import *
 from models.m_students import *
 
-import json
+# import json
 import hashlib
 
 import boto3
-dynamodb = boto3.resource('dynamodb')
-TABLE_DELIVERY_RELATION = os.environ['TABLE_DELIVERY_RELATION']
+# from boto3.dynamodb.conditions import IN
 
 @contextmanager
 def session_scope():
@@ -128,6 +127,10 @@ def login():
 @app.route("/api/schoolappParent/searchDelivery", methods=["POST"])
 def search_delivery():
     print('search_delivery')
+    dynamodb = boto3.resource('dynamodb')
+    print("dynamodb", dynamodb)
+
+    # リクエストから値を取得
     event = request.get_json()
     print('event', event)
     parent_id = event['parent_id']
@@ -135,26 +138,57 @@ def search_delivery():
     student_id = event['student_id']
     print('student_id', student_id)
 
-    # 生徒に紐づく配信情報を取得する
-    print("dynamodb", dynamodb)
+    # 生徒に紐づく配信idのリストを取得
+    TABLE_DELIVERY_RELATION = os.environ['TABLE_DELIVERY_RELATION']
     print(TABLE_DELIVERY_RELATION)
     table = dynamodb.Table(TABLE_DELIVERY_RELATION)
     print("table", table)
-    db_response = "syokiti"
     try:
         db_response = table.get_item(Key={ "parent_id": parent_id, "student_id": student_id })
+        print('db_response', db_response)
+
+        if "Item" in db_response:
+            item = db_response["Item"]
+            print('item', item)
+            delivery_id_list = item['delivery_id']
+            print('delivery_id_list', delivery_id_list)
+        else:
+            return {
+                "statusCode": 500,
+                "message": "db result not found"
+            }
     except Exception as error:
-        print(error)
-    print('db_response', db_response)
-    if "Item" in db_response:
-        item = db_response["Item"]
-        print('item', item)
-        response = {
-            "statusCode": 200,
-            "delivery": item['delivery_id']
-        }
-    else:
-        response = {
-            "statusCode": 500,
-        }
-    return response
+        return {
+                "statusCode": 500,
+                "message": error
+            }
+
+    # 配信idに紐づく配信情報のリストを取得
+    TABLE_DELIVERY_HISTORY = os.environ['TABLE_DELIVERY_HISTORY']
+    print(TABLE_DELIVERY_HISTORY)
+
+    table = dynamodb.Table(TABLE_DELIVERY_HISTORY)
+    print("table", table)
+    deliveries = []
+    for delivery_id in delivery_id_list:
+        try:
+            db_response = table.get_item(Key={ "delivery_id": delivery_id })
+            if "Item" in db_response:
+                item = db_response["Item"]
+                print('item', item)
+                deliveries.append(item)
+            else:
+                return {
+                    "statusCode": 500,
+                    "message": "db result not found"
+                }
+        except Exception as error:
+            return {
+                "statusCode": 500,
+                "message": error
+            }
+
+    return {
+        "statusCode": 200,
+        "deliveries": deliveries
+    }
