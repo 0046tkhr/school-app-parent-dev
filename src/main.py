@@ -16,7 +16,7 @@ import hashlib
 
 import boto3
 dynamodb = boto3.resource('dynamodb')
-TABLE_PARENT_STUDENT_DELIVERY = os.environ['TABLE_PARENT_STUDENT_DELIVERY']
+TABLE_DELIVERY_RELATION = os.environ['TABLE_DELIVERY_RELATION']
 
 @contextmanager
 def session_scope():
@@ -137,8 +137,8 @@ def search_delivery():
 
     # 生徒に紐づく配信情報を取得する
     print("dynamodb", dynamodb)
-    print(TABLE_PARENT_STUDENT_DELIVERY)
-    table = dynamodb.Table(TABLE_PARENT_STUDENT_DELIVERY)
+    print(TABLE_DELIVERY_RELATION)
+    table = dynamodb.Table(TABLE_DELIVERY_RELATION)
     print("table", table)
     db_response = "syokiti"
     try:
