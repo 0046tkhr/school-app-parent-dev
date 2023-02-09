@@ -15,7 +15,6 @@ from models.m_students import *
 import hashlib
 
 import boto3
-# from boto3.dynamodb.conditions import IN
 
 @contextmanager
 def session_scope():
@@ -38,10 +37,6 @@ logger.setLevel(logging.INFO)
 
 @app.route("/api/schoolappParent/dev", methods=["GET"])
 def migration():
-    with session_scope() as session:
-        # テーブルを作成する
-        # run_migration(session)
-        tables = ENGINE.table_names()
     response = {
         "statusCode": 200,
     }
