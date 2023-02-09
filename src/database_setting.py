@@ -9,7 +9,6 @@ db_name = os.environ['MYSQL_DB_NAME']
 user_name = os.environ['MYSQL_USERNAME']
 password = os.environ['MYSQL_PASSWORD']
 charset_type = "utf8"
-print('1111111111111111111111')
 # mysqlのDBの設定
 DATABASE = f'mysql+mysqlconnector://{user_name}:{password}@{proxy}:{port}/{db_name}?charset={charset_type}'
 ENGINE = create_engine(
@@ -17,8 +16,6 @@ ENGINE = create_engine(
     # encoding = "utf-8",
     echo=False # Trueだと実行のたびにSQLが出力される
 )
-print('')
-print('2222222222222222222222')
 # Sessionの作成
 session = scoped_session(
     # ORM実行時の設定。自動コミットするか、自動反映するなど。
@@ -28,8 +25,6 @@ session = scoped_session(
         bind = ENGINE
     )
 )
-print('ENGINE', ENGINE)
-print('session!!', session)
 class baseModel(object):
     def to_dict(self):
         model = {}
@@ -53,6 +48,4 @@ class baseModel(object):
         return items
 # modelで使用する
 Base = declarative_base(cls=baseModel)
-print('a')
 Base.query = session.query_property()
-print('b', Base.query)
