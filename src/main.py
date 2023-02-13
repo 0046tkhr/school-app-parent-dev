@@ -125,6 +125,29 @@ def login():
     print('response', response)
     return response
 
+@app.route("/api/schoolappParent/searchParentByUserId", methods=["POST"])
+def searchParentByUserId():
+    print('searchParentByUserId')
+    # userIdの取得
+    event = request.get_json()
+    userId = event['userId']
+    print('userId', userId)
+    
+    # userIdが一致する保護者を検索
+    with session_scope() as session:
+        parent = session.query(Parents).\
+            filter(Parents.user_id == userId).\
+            first()
+
+        # 保護者の情報を返却
+        return {
+            "parentInfo": {
+                "parent_name": parent.parent_name,
+                "relationship_code": parent.relationship_code,
+                "user_id": parent.user_id
+            }
+        }
+
 @app.route("/api/schoolappParent/searchDelivery", methods=["POST"])
 def search_delivery():
     print('search_delivery')
