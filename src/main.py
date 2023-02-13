@@ -125,6 +125,29 @@ def login():
     print('response', response)
     return response
 
+@app.route("/api/schoolappParent/createParent", methods=["POST"])
+def createParent():
+    print('createParent')
+    # payloadの取得
+    event = request.get_json()
+    parent_name = event['parentName']
+    relationship_code = event['relationshipCode']
+    user_id = event['userId']
+        
+    # 保護者マスタにレコードを登録
+    with session_scope() as session:
+        parent = Parents(
+            parent_name = parent_name,
+            relationship_code = relationship_code,
+            user_id = user_id
+        )
+        session.add(parent)
+        print('parent', parent)
+    session.commit()
+    return {
+        "statusCode": 200
+    }
+
 @app.route("/api/schoolappParent/searchParentByUserId", methods=["POST"])
 def searchParentByUserId():
     print('searchParentByUserId')
