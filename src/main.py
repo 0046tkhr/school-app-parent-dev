@@ -169,33 +169,43 @@ def searchParentByUserId():
         }
 
     # 保護者の情報を返却
+    print("parentInfo", parentInfo)
     return {
         "parentInfo": parentInfo
     }
 
-@app.route("/api/schoolappParent/searchStudentsByUserId", methods=["POST"])
-def searchParentByUserId():
-    print('searchParentByUserId')
+@app.route("/api/schoolappParent/searchStudentsByParentId", methods=["POST"])
+def searchStudentByParentId():
+    print('searchStudentByParentId')
     # userIdの取得
     event = request.get_json()
-    userId = event['userId']
-    print('userId', userId)
+    print("event", event)
+    parent_id = event['parentId']
+    print('parent_id', parent_id)
     
-    # userIdが一致する保護者を検索
-    parentInfo = {}
+    # parentIdに紐づく生徒情報を全て取得
+    student_info_list = []
     with session_scope() as session:
-        parent = session.query(Parents).\
-            filter(Parents.user_id == userId).\
-            first()
-        parentInfo = {
-            "parent_name": parent.parent_name,
-            "relationship_code": parent.relationship_code,
-            "user_id": parent.user_id
-        }
+        students = session.query(Students).\
+            filter(Students.parent_id == parent_id).\
+            all()
+        for student in students:
+            student_info_list.append({
+                "student_id": student.student_id,
+                "school_id": student.school_id,
+                "parent_id": student.parent_id,
+                "last_name": student.last_name,
+                "last_name_kana": student.last_name_kana,
+                "first_name": student.first_name,
+                "first_name_kana": student.first_name_kana,
+                "number": student.number,
+                "classroom_id": student.classroom_id,
+                "security_key": student.security_key
+            })
 
-    # 保護者の情報を返却
+    # 生徒情報を返却
     return {
-        "parentInfo": parentInfo
+        "students": student_info_list
     }
 
 @app.route("/api/schoolappParent/searchDelivery", methods=["POST"])
