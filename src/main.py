@@ -133,7 +133,7 @@ def createParent():
     parent_name = event['parentName']
     relationship_code = event['relationshipCode']
     user_id = event['userId']
-        
+
     # 保護者マスタにレコードを登録
     with session_scope() as session:
         parent = Parents(
@@ -142,7 +142,6 @@ def createParent():
             user_id = user_id
         )
         session.add(parent)
-        print('parent', parent)
     session.commit()
     return {
         "statusCode": 200
@@ -157,19 +156,21 @@ def searchParentByUserId():
     print('userId', userId)
     
     # userIdが一致する保護者を検索
+    parentInfo = {}
     with session_scope() as session:
         parent = session.query(Parents).\
             filter(Parents.user_id == userId).\
             first()
-
-        # 保護者の情報を返却
-        return {
-            "parentInfo": {
-                "parent_name": parent.parent_name,
-                "relationship_code": parent.relationship_code,
-                "user_id": parent.user_id
-            }
+        parentInfo = {
+            "parent_name": parent.parent_name,
+            "relationship_code": parent.relationship_code,
+            "user_id": parent.user_id
         }
+
+    # 保護者の情報を返却
+    return {
+        "parentInfo": parentInfo
+    }
 
 @app.route("/api/schoolappParent/searchDelivery", methods=["POST"])
 def search_delivery():
