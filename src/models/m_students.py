@@ -25,3 +25,16 @@ class Students(Base):
     last_updated_by = Column('last_updated_by', String(30), comment='最終更新者')
     classroom_id = Column('classroom_id', Integer, comment='クラスID')
     security_key = Column('security_key', String(8), comment='セキュリティーキー')
+    
+    def to_dict_relationship(self):
+        model = self.to_dict()
+        print(model)
+        return model
+    def query_to_dict_relationship(result):
+        # 変数を初期化する
+        items = []
+        # 結果を処理する
+        for row in result:
+            model = row.to_dict_relationship()
+            items.append(model)
+        return items

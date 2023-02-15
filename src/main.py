@@ -128,8 +128,18 @@ def createParent():
         )
         session.add(parent)
     session.commit()
+
+    # 登録したレコードを取得
+    parentInfo = ""
+    with session_scope() as session:
+        parent = session.query(Parents).\
+            filter(Parents.user_id == user_id).\
+            first()
+        parentInfo = Parents.to_dict_relationship(parent)
+
     return {
-        "statusCode": 200
+        "statusCode": 200,
+        "parentInfo": parentInfo
     }
 
 @app.route("/api/schoolappParent/searchParentByUserId", methods=["POST"])
@@ -206,6 +216,8 @@ def link_relation():
     security_key = event['securityKey']
     print('security_key', security_key)
     
+    student = ""
+    hoge = ""
     # 生徒情報テーブルの該当レコードを更新
     with session_scope() as session:
         student = session.query(Students).\
@@ -218,10 +230,13 @@ def link_relation():
             return {
                 "statusCode": 500
             }
+        hoge = Students.to_dict_relationship(student)
     session.commit()
-    
+    print("student",student)
+    print("hoge",hoge)
     return {
-        "statusCode": 200
+        "statusCode": 200,
+        "student": hoge
     }
 
 @app.route("/api/schoolappParent/searchDelivery", methods=["POST"])
@@ -232,6 +247,7 @@ def search_delivery():
     # リクエストから値を取得
     event = request.get_json()
     parent_id = event['parent_id']
+    print
     student_id = event['student_id']
 
     # 生徒に紐づく配信idのリストを取得
@@ -240,7 +256,7 @@ def search_delivery():
     print("table", table)
     try:
         print("start")
-        db_response = table.get_item(Key={ "parent_id": parent_id, "student_id": student_id })
+        db_response = table.get_item(Key={ "parent_id": int(parent_id), "student_id": int(student_id) })
         print("db_response", db_response)
 
         if "Item" in db_response:

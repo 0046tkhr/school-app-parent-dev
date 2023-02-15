@@ -25,3 +25,16 @@ class Parents(Base):
     # customer_id = Column('customer_id', Integer, comment='得意先ID')
     # 外部制約設定
     # customer = relationship("Customer", back_populates="customerStaffs", foreign_keys=[customer_id])
+    
+    def to_dict_relationship(self):
+        model = self.to_dict()
+        print(model)
+        return model
+    def query_to_dict_relationship(result):
+        # 変数を初期化する
+        items = []
+        # 結果を処理する
+        for row in result:
+            model = row.to_dict_relationship()
+            items.append(model)
+        return items
