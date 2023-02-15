@@ -209,6 +209,36 @@ def searchStudentByParentId():
         "students": student_info_list
     }
 
+@app.route("/api/schoolappParent/linkRelation", methods=["POST"])
+def link_relation():
+    print('link_relation')
+    
+    # eventから各値を取得
+    event = request.get_json()
+    print('event')
+    parent_id = event['parentId']
+    print('parent_id', parent_id)
+    security_key = event['securityKey']
+    print('security_key', security_key)
+    
+    # 生徒情報テーブルの該当レコードを更新
+    with session_scope() as session:
+        student = session.query(Students).\
+            filter(Students.security_key == security_key).\
+            first()
+        # 保護者情報とまだ紐づいていないなら新規紐づけ
+        if not student.parent_id:
+            student.parent_id = parent_id
+        else:
+            return {
+                "statusCode": 500
+            }
+    session.commit()
+    
+    return {
+        "statusCode": 200
+    }
+
 @app.route("/api/schoolappParent/searchDelivery", methods=["POST"])
 def search_delivery():
     print('search_delivery')
