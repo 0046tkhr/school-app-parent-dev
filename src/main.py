@@ -148,7 +148,6 @@ def searchParentByUserId():
     # userIdの取得
     event = request.get_json()
     userId = event['userId']
-    print('userId', userId)
     
     # userIdが一致する保護者を検索
     parentInfo = ""
@@ -165,7 +164,6 @@ def searchParentByUserId():
             }
 
     # 保護者の情報を返却
-    print("parentInfo", parentInfo)
     return {
         "parentInfo": parentInfo
     }
@@ -175,9 +173,7 @@ def searchStudentByParentId():
     print('searchStudentByParentId')
     # userIdの取得
     event = request.get_json()
-    print("event", event)
     parent_id = event['parentId']
-    print('parent_id', parent_id)
     
     # parentIdに紐づく生徒情報を全て取得
     student_info_list = []
@@ -205,20 +201,16 @@ def searchStudentByParentId():
     }
 
 @app.route("/api/schoolappParent/linkRelation", methods=["POST"])
-def link_relation():
-    print('link_relation')
+def linkRelation():
+    print('linkRelation')
     
     # eventから各値を取得
     event = request.get_json()
-    print('event')
     parent_id = event['parentId']
-    print('parent_id', parent_id)
     security_key = event['securityKey']
-    print('security_key', security_key)
     
-    student = ""
-    hoge = ""
     # 生徒情報テーブルの該当レコードを更新
+    studentInfo = ""
     with session_scope() as session:
         student = session.query(Students).\
             filter(Students.security_key == security_key).\
@@ -230,13 +222,11 @@ def link_relation():
             return {
                 "statusCode": 500
             }
-        hoge = Students.to_dict_relationship(student)
+        studentInfo = Students.to_dict_relationship(student)
     session.commit()
-    print("student",student)
-    print("hoge",hoge)
     return {
         "statusCode": 200,
-        "student": hoge
+        "student": studentInfo
     }
 
 @app.route("/api/schoolappParent/searchDelivery", methods=["POST"])
@@ -253,31 +243,23 @@ def search_delivery():
     # 生徒に紐づく配信idのリストを取得
     TABLE_DELIVERY_RELATION = os.environ['TABLE_DELIVERY_RELATION']
     table = dynamodb.Table(TABLE_DELIVERY_RELATION)
-    print("table", table)
     try:
-        print("start")
         db_response = table.get_item(Key={ "parent_id": int(parent_id), "student_id": int(student_id) })
-        print("db_response", db_response)
 
         if "Item" in db_response:
-            print("鼠")
             item = db_response["Item"]
-            print("牛")
             delivery_id_list = item['delivery_id']
         else:
-            print("虎")
             return {
                 "statusCode": 500,
                 "message": "db result not found"
             }
     except Exception as error:
-        print("兎", error)
         return {
             "statusCode": 500,
             "error": str(error)
         }
 
-    print("delivery_id_list", delivery_id_list)
     # 配信idに紐づく配信情報のリストを取得
     TABLE_DELIVERY_HISTORY = os.environ['TABLE_DELIVERY_HISTORY']
     table = dynamodb.Table(TABLE_DELIVERY_HISTORY)
@@ -286,17 +268,14 @@ def search_delivery():
         try:
             db_response = table.get_item(Key={ "delivery_id": delivery_id })
             if "Item" in db_response:
-                print("龍")
                 item = db_response["Item"]
                 deliveries.append(item)
         except Exception as error:
-            print("蛇", error)
             return {
                 "statusCode": 500,
                 "error": str(error)
             }
 
-    print("deliveries", deliveries)
     return {
         "statusCode": 200,
         "deliveries": deliveries
