@@ -141,7 +141,7 @@ def searchParentByUserId():
     print('userId', userId)
     
     # userIdが一致する保護者を検索
-    parentInfo = null
+    parentInfo = ""
     with session_scope() as session:
         parent = session.query(Parents).\
             filter(Parents.user_id == userId).\
