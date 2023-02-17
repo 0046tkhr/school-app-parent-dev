@@ -226,7 +226,7 @@ def linkRelation():
         "student": studentInfo
     }
 
-@app.route("/api/schoolappParent/searchMonthDelivery", methods=["POST"])
+@app.route("/api/schoolappParent/searchLatestDelivery", methods=["POST"])
 def search_latest_delivery():
     # リクエストから値を取得
     event = request.get_json()
@@ -266,6 +266,56 @@ def search_latest_delivery():
             )).\
             order_by(asc(DeliveryHistory.delivered_at)).\
             limit(limit).\
+            all()
+        deliveriesInfo = deliveriesInfo + DeliveryHistory.query_to_dict_relationship(deliveries)
+    print('deliveriesInfo', deliveriesInfo)
+
+    return {
+        "statusCode": 200,
+        "deliveries": deliveriesInfo
+    }
+
+@app.route("/api/schoolappParent/searchMonthDelivery", methods=["POST"])
+def search_all_delivery():
+    # リクエストから値を取得
+    event = request.get_json()
+    student_id = event['student_id']
+    print("student_id",student_id)
+    year = event['year']
+    month = event['month']
+
+    studentInfo = null
+    # 生徒の情報を取得(学校, 学年, 組, 出席番号)
+    with session_scope() as session:
+        student = session.query(Students).\
+            join(Classroom, Students.classroom_id == Classroom.classroom_id, isouter = True).\
+            filter(Students.student_id == student_id).\
+            first()
+        studentInfo = Students.to_dict_relationship(student)
+    print("studentInfo", studentInfo)
+
+    deliveriesInfo = []
+    # 学校全体,学年全体,クラス,生徒個人に向けた配信を取得
+    with session_scope() as session:
+        school_id = studentInfo['school_id']
+        print("school_id", school_id)
+        grade_id = studentInfo['classroom']['grade_id']
+        print("grade_id", grade_id)
+        classroom_id = studentInfo['classroom_id']
+        print("classroom_id", classroom_id)
+        student_id = studentInfo['student_id']
+        print("student_id", student_id)
+
+        deliveries = session.query(DeliveryHistory).\
+            filter(
+                or_(
+                    and_(DeliveryHistory.delivery_division == "SCHOOL", DeliveryHistory.school_id == school_id),
+                    and_(DeliveryHistory.delivery_division == "GRADE", DeliveryHistory.target_grade == grade_id),
+                    and_(DeliveryHistory.delivery_division == "CLASS", DeliveryHistory.target_class == classroom_id),
+                    and_(DeliveryHistory.delivery_division == "PERSONAL", DeliveryHistory.target_student == student_id)
+                )
+            ).\
+            order_by(asc(DeliveryHistory.delivered_at)).\
             all()
         deliveriesInfo = deliveriesInfo + DeliveryHistory.query_to_dict_relationship(deliveries)
     print('deliveriesInfo', deliveriesInfo)
