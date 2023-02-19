@@ -16,7 +16,8 @@ from models.t_delivery_history import *
 # import json
 import hashlib
 
-import boto3
+# import boto3
+import datetime
 
 @contextmanager
 def session_scope():
@@ -246,7 +247,7 @@ def search_latest_delivery():
     print("studentInfo", studentInfo)
 
     deliveriesInfo = []
-    # 学校全体,学年全体,クラス,生徒個人に向けた配信を取得
+    # 指定された件数の学校全体,学年全体,クラス,生徒個人に向けた配信を取得
     with session_scope() as session:
         school_id = studentInfo['school_id']
         print("school_id", school_id)
@@ -267,7 +268,24 @@ def search_latest_delivery():
             order_by(asc(DeliveryHistory.delivered_at)).\
             limit(limit).\
             all()
-        deliveriesInfo = deliveriesInfo + DeliveryHistory.query_to_dict_relationship(deliveries)
+        # deliveriesInfo = deliveriesInfo + DeliveryHistory.query_to_dict_relationship(deliveries)
+        
+        for delivery in deliveries:
+            deliveriesInfo.append({
+                "created_at": delivery.created_at,
+                "delivered_at": delivery.delivered_at,
+                "delivery_contents": delivery.delivery_contents,
+                "delivery_division": delivery.delivery_division,
+                "delivery_id": delivery.delivery_id,
+                "delivery_name": delivery.delivery_name,
+                "delivery_schedule": delivery.delivery_schedule,
+                "school_id": delivery.school_id,
+                "staff_id": delivery.staff_id,
+                "target_class": delivery.target_class,
+                "target_grade": delivery.target_grade,
+                "target_student": delivery.target_student,
+                "updated_at": delivery.updated_at
+            })
     print('deliveriesInfo', deliveriesInfo)
 
     return {
@@ -282,7 +300,21 @@ def search_all_delivery():
     student_id = event['student_id']
     print("student_id",student_id)
     year = event['year']
+    print("year", year)
     month = event['month']
+    print("month", month)
+    
+    start_month = {
+        "year": year,
+        "month": month
+    }
+    print("start_month", start_month)
+    
+    end_month = {
+        "year": year + 1 if (month == 12) else year,
+        "month": 1 if (month == 12) else month + 1 
+    }
+    print("end_month", end_month)
 
     studentInfo = null
     # 生徒の情報を取得(学校, 学年, 組, 出席番号)
@@ -295,7 +327,7 @@ def search_all_delivery():
     print("studentInfo", studentInfo)
 
     deliveriesInfo = []
-    # 学校全体,学年全体,クラス,生徒個人に向けた配信を取得
+    # 指定された月の学校全体,学年全体,クラス,生徒個人に向けた配信を取得
     with session_scope() as session:
         school_id = studentInfo['school_id']
         print("school_id", school_id)
@@ -307,19 +339,40 @@ def search_all_delivery():
         print("student_id", student_id)
 
         deliveries = session.query(DeliveryHistory).\
-            filter(
+            filter(and_(
+                and_(
+                    DeliveryHistory.delivered_at >= datetime.date(start_month['year'], start_month['month'], 1),
+                    DeliveryHistory.delivered_at < datetime.date(end_month['year'], end_month['month'], 1)
+                ),
                 or_(
                     and_(DeliveryHistory.delivery_division == "SCHOOL", DeliveryHistory.school_id == school_id),
                     and_(DeliveryHistory.delivery_division == "GRADE", DeliveryHistory.target_grade == grade_id),
                     and_(DeliveryHistory.delivery_division == "CLASS", DeliveryHistory.target_class == classroom_id),
                     and_(DeliveryHistory.delivery_division == "PERSONAL", DeliveryHistory.target_student == student_id)
                 )
-            ).\
+            )).\
             order_by(asc(DeliveryHistory.delivered_at)).\
             all()
-        deliveriesInfo = deliveriesInfo + DeliveryHistory.query_to_dict_relationship(deliveries)
-    print('deliveriesInfo', deliveriesInfo)
 
+        # deliveriesInfo = deliveriesInfo + DeliveryHistory.query_to_dict_relationship(deliveries)
+        for delivery in deliveries:
+            deliveriesInfo.append({
+                "created_at": delivery.created_at,
+                "delivered_at": delivery.delivered_at,
+                "delivery_contents": delivery.delivery_contents,
+                "delivery_division": delivery.delivery_division,
+                "delivery_id": delivery.delivery_id,
+                "delivery_name": delivery.delivery_name,
+                "delivery_schedule": delivery.delivery_schedule,
+                "school_id": delivery.school_id,
+                "staff_id": delivery.staff_id,
+                "target_class": delivery.target_class,
+                "target_grade": delivery.target_grade,
+                "target_student": delivery.target_student,
+                "updated_at": delivery.updated_at
+            })
+
+    print('deliveriesInfo', deliveriesInfo)
     return {
         "statusCode": 200,
         "deliveries": deliveriesInfo

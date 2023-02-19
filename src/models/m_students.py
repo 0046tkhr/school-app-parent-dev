@@ -31,10 +31,8 @@ class Students(Base):
     
     def to_dict_relationship(self):
         model = self.to_dict()
-        print("model",model)
         if self.classroom is not None:
             model["classroom"] = self.classroom.to_dict()
-        print("model",model)
         return model
     def query_to_dict_relationship(result):
         # 変数を初期化する
