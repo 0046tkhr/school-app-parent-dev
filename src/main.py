@@ -16,7 +16,6 @@ from models.t_delivery_history import *
 # import json
 import hashlib
 
-# import boto3
 import datetime
 
 @contextmanager
