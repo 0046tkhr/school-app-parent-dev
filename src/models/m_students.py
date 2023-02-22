@@ -23,12 +23,16 @@ class Students(Base):
     created_at = Column('created_at', DATETIME, comment='作成日')
     updated_at = Column('updated_at', DATETIME, comment='更新日')
     last_updated_by = Column('last_updated_by', String(30), comment='最終更新者')
-    classroom_id = Column('classroom_id', Integer, comment='クラスID')
+    classroom_id = Column('classroom_id', Integer, ForeignKey("m_classroom.classroom_id"), comment='クラスID')
     security_key = Column('security_key', String(8), comment='セキュリティーキー')
+    
+    # 外部制約
+    classroom = relationship("Classroom", back_populates="students", foreign_keys=[classroom_id])
     
     def to_dict_relationship(self):
         model = self.to_dict()
-        print(model)
+        if self.classroom is not None:
+            model["classroom"] = self.classroom.to_dict()
         return model
     def query_to_dict_relationship(result):
         # 変数を初期化する
