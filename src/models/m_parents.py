@@ -13,7 +13,10 @@ class Parents(Base):
     }
     # テーブルのカラム
     parent_id = Column('parent_id', Integer, primary_key=True, comment='保護者ID')
-    parent_name = Column('parent_name', String(60), comment='保護者氏名')
+    last_name = Column('last_name', String(30), comment='保護者氏名(姓)')
+    first_name = Column('first_name', String(30), comment='保護者氏名(名)')
+    last_name_kana = Column('last_name_kana', String(30), comment='保護者氏名(姓・カナ)')
+    first_name_kana = Column('first_name_kana', String(30), comment='保護者氏名(名・カナ)')
     user_id = Column('user_id', String(33), comment='ユーザーID')
     expiration_time = Column('expiration_time', DATETIME, comment='有効期限')
     relationship_code = Column('relationship_code', String(3), comment='続柄コード')

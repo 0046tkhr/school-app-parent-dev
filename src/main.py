@@ -116,14 +116,20 @@ def login():
 def createParent():
     # payloadの取得
     event = request.get_json()
-    parent_name = event['parentName']
-    relationship_code = event['relationshipCode']
-    user_id = event['userId']
+    last_name = event['last_name']
+    first_name = event['first_name']
+    last_name_kana = event['last_name_kana']
+    first_name_kana = event['first_name_kana']
+    relationship_code = event['relationship_code']
+    user_id = event['user_id']
 
     # 保護者マスタにレコードを登録
     with session_scope() as session:
         parent = Parents(
-            parent_name = parent_name,
+            last_name = last_name,
+            first_name = first_name,
+            last_name_kana = last_name_kana,
+            first_name_kana = first_name_kana,
             relationship_code = relationship_code,
             user_id = user_id
         )
@@ -156,12 +162,7 @@ def searchParentByUserId():
             filter(Parents.user_id == userId).\
             first()
         if parent:
-            parentInfo = {
-                "parent_id": parent.parent_id,
-                "parent_name": parent.parent_name,
-                "relationship_code": parent.relationship_code,
-                "user_id": parent.user_id
-            }
+            parentInfo = Parents.to_dict_relationship(parent)
 
     # 保護者の情報を返却
     return {
