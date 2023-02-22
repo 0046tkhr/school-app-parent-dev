@@ -231,9 +231,7 @@ def search_latest_delivery():
     # リクエストから値を取得
     event = request.get_json()
     student_id = event['student_id']
-    print("student_id",student_id)
     limit = event['limit']
-    print("limit", limit)
 
     studentInfo = null
     # 生徒の情報を取得(学校, 学年, 組, 出席番号)
@@ -243,19 +241,14 @@ def search_latest_delivery():
             filter(Students.student_id == student_id).\
             first()
         studentInfo = Students.to_dict_relationship(student)
-    print("studentInfo", studentInfo)
 
     deliveriesInfo = []
     # 指定された件数の学校全体,学年全体,クラス,生徒個人に向けた配信を取得
     with session_scope() as session:
         school_id = studentInfo['school_id']
-        print("school_id", school_id)
         grade_id = studentInfo['classroom']['grade_id']
-        print("grade_id", grade_id)
         classroom_id = studentInfo['classroom_id']
-        print("classroom_id", classroom_id)
         student_id = studentInfo['student_id']
-        print("student_id", student_id)
 
         deliveries = session.query(DeliveryHistory).\
             filter(or_(
@@ -267,8 +260,7 @@ def search_latest_delivery():
             order_by(asc(DeliveryHistory.delivered_at)).\
             limit(limit).\
             all()
-        # deliveriesInfo = deliveriesInfo + DeliveryHistory.query_to_dict_relationship(deliveries)
-        
+        # to_dict()を使用するとJSON型を解析できない
         for delivery in deliveries:
             deliveriesInfo.append({
                 "created_at": delivery.created_at,
@@ -285,7 +277,6 @@ def search_latest_delivery():
                 "target_student": delivery.target_student,
                 "updated_at": delivery.updated_at
             })
-    print('deliveriesInfo', deliveriesInfo)
 
     return {
         "statusCode": 200,
@@ -297,23 +288,18 @@ def search_all_delivery():
     # リクエストから値を取得
     event = request.get_json()
     student_id = event['student_id']
-    print("student_id",student_id)
     year = event['year']
-    print("year", year)
     month = event['month']
-    print("month", month)
     
     start_month = {
         "year": year,
         "month": month
     }
-    print("start_month", start_month)
     
     end_month = {
         "year": year + 1 if (month == 12) else year,
         "month": 1 if (month == 12) else month + 1 
     }
-    print("end_month", end_month)
 
     studentInfo = null
     # 生徒の情報を取得(学校, 学年, 組, 出席番号)
@@ -323,19 +309,14 @@ def search_all_delivery():
             filter(Students.student_id == student_id).\
             first()
         studentInfo = Students.to_dict_relationship(student)
-    print("studentInfo", studentInfo)
 
     deliveriesInfo = []
     # 指定された月の学校全体,学年全体,クラス,生徒個人に向けた配信を取得
     with session_scope() as session:
         school_id = studentInfo['school_id']
-        print("school_id", school_id)
         grade_id = studentInfo['classroom']['grade_id']
-        print("grade_id", grade_id)
         classroom_id = studentInfo['classroom_id']
-        print("classroom_id", classroom_id)
         student_id = studentInfo['student_id']
-        print("student_id", student_id)
 
         deliveries = session.query(DeliveryHistory).\
             filter(and_(
@@ -353,7 +334,7 @@ def search_all_delivery():
             order_by(asc(DeliveryHistory.delivered_at)).\
             all()
 
-        # deliveriesInfo = deliveriesInfo + DeliveryHistory.query_to_dict_relationship(deliveries)
+        # to_dict()を使用するとJSON型を解析できない
         for delivery in deliveries:
             deliveriesInfo.append({
                 "created_at": delivery.created_at,
@@ -371,7 +352,6 @@ def search_all_delivery():
                 "updated_at": delivery.updated_at
             })
 
-    print('deliveriesInfo', deliveriesInfo)
     return {
         "statusCode": 200,
         "deliveries": deliveriesInfo
