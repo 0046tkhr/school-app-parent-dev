@@ -10,11 +10,13 @@ from database_setting import ENGINE
 from database_setting import session
 from models.m_parents import *
 from models.m_students import *
+from models.m_classroom import *
+from models.t_delivery_history import *
 
 # import json
 import hashlib
 
-import boto3
+import datetime
 
 @contextmanager
 def session_scope():
@@ -234,52 +236,133 @@ def linkRelation():
         "student": studentInfo
     }
 
-@app.route("/api/schoolappParent/searchDelivery", methods=["POST"])
-def search_delivery():
-    dynamodb = boto3.resource('dynamodb')
-
+@app.route("/api/schoolappParent/searchLatestDelivery", methods=["POST"])
+def search_latest_delivery():
     # リクエストから値を取得
     event = request.get_json()
-    parent_id = event['parent_id']
     student_id = event['student_id']
+    limit = event['limit']
 
-    # 生徒に紐づく配信idのリストを取得
-    TABLE_DELIVERY_RELATION = os.environ['TABLE_DELIVERY_RELATION']
-    table = dynamodb.Table(TABLE_DELIVERY_RELATION)
-    try:
-        db_response = table.get_item(Key={ "parent_id": int(parent_id), "student_id": int(student_id) })
+    studentInfo = null
+    # 生徒の情報を取得(学校, 学年, 組, 出席番号)
+    with session_scope() as session:
+        student = session.query(Students).\
+            join(Classroom, Students.classroom_id == Classroom.classroom_id, isouter = True).\
+            filter(Students.student_id == student_id).\
+            first()
+        studentInfo = Students.to_dict_relationship(student)
 
-        if "Item" in db_response:
-            item = db_response["Item"]
-            delivery_id_list = item['delivery_id']
-        else:
-            return {
-                "statusCode": 500,
-                "message": "db result not found"
-            }
-    except Exception as error:
-        return {
-            "statusCode": 500,
-            "error": str(error)
-        }
+    deliveriesInfo = []
+    # 指定された件数の学校全体,学年全体,クラス,生徒個人に向けた配信を取得
+    with session_scope() as session:
+        school_id = studentInfo['school_id']
+        grade_id = studentInfo['classroom']['grade_id']
+        classroom_id = studentInfo['classroom_id']
+        student_id = studentInfo['student_id']
 
-    # 配信idに紐づく配信情報のリストを取得
-    TABLE_DELIVERY_HISTORY = os.environ['TABLE_DELIVERY_HISTORY']
-    table = dynamodb.Table(TABLE_DELIVERY_HISTORY)
-    deliveries = []
-    for delivery_id in delivery_id_list:
-        try:
-            db_response = table.get_item(Key={ "delivery_id": delivery_id })
-            if "Item" in db_response:
-                item = db_response["Item"]
-                deliveries.append(item)
-        except Exception as error:
-            return {
-                "statusCode": 500,
-                "error": str(error)
-            }
+        deliveries = session.query(DeliveryHistory).\
+            filter(or_(
+                and_(DeliveryHistory.delivery_division == "SCHOOL", DeliveryHistory.school_id == school_id),
+                and_(DeliveryHistory.delivery_division == "GRADE", DeliveryHistory.target_grade == grade_id),
+                and_(DeliveryHistory.delivery_division == "CLASS", DeliveryHistory.target_class == classroom_id),
+                and_(DeliveryHistory.delivery_division == "PERSONAL", DeliveryHistory.target_student == student_id)
+            )).\
+            order_by(asc(DeliveryHistory.delivered_at)).\
+            limit(limit).\
+            all()
+        # to_dict()を使用するとJSON型を解析できない
+        for delivery in deliveries:
+            deliveriesInfo.append({
+                "created_at": delivery.created_at,
+                "delivered_at": delivery.delivered_at,
+                "delivery_contents": delivery.delivery_contents,
+                "delivery_division": delivery.delivery_division,
+                "delivery_id": delivery.delivery_id,
+                "delivery_name": delivery.delivery_name,
+                "delivery_schedule": delivery.delivery_schedule,
+                "school_id": delivery.school_id,
+                "staff_id": delivery.staff_id,
+                "target_class": delivery.target_class,
+                "target_grade": delivery.target_grade,
+                "target_student": delivery.target_student,
+                "updated_at": delivery.updated_at
+            })
 
     return {
         "statusCode": 200,
-        "deliveries": deliveries
+        "deliveries": deliveriesInfo
+    }
+
+@app.route("/api/schoolappParent/searchMonthDelivery", methods=["POST"])
+def search_all_delivery():
+    # リクエストから値を取得
+    event = request.get_json()
+    student_id = event['student_id']
+    year = event['year']
+    month = event['month']
+    
+    start_month = {
+        "year": year,
+        "month": month
+    }
+    
+    end_month = {
+        "year": year + 1 if (month == 12) else year,
+        "month": 1 if (month == 12) else month + 1 
+    }
+
+    studentInfo = null
+    # 生徒の情報を取得(学校, 学年, 組, 出席番号)
+    with session_scope() as session:
+        student = session.query(Students).\
+            join(Classroom, Students.classroom_id == Classroom.classroom_id, isouter = True).\
+            filter(Students.student_id == student_id).\
+            first()
+        studentInfo = Students.to_dict_relationship(student)
+
+    deliveriesInfo = []
+    # 指定された月の学校全体,学年全体,クラス,生徒個人に向けた配信を取得
+    with session_scope() as session:
+        school_id = studentInfo['school_id']
+        grade_id = studentInfo['classroom']['grade_id']
+        classroom_id = studentInfo['classroom_id']
+        student_id = studentInfo['student_id']
+
+        deliveries = session.query(DeliveryHistory).\
+            filter(and_(
+                and_(
+                    DeliveryHistory.delivered_at >= datetime.date(start_month['year'], start_month['month'], 1),
+                    DeliveryHistory.delivered_at < datetime.date(end_month['year'], end_month['month'], 1)
+                ),
+                or_(
+                    and_(DeliveryHistory.delivery_division == "SCHOOL", DeliveryHistory.school_id == school_id),
+                    and_(DeliveryHistory.delivery_division == "GRADE", DeliveryHistory.target_grade == grade_id),
+                    and_(DeliveryHistory.delivery_division == "CLASS", DeliveryHistory.target_class == classroom_id),
+                    and_(DeliveryHistory.delivery_division == "PERSONAL", DeliveryHistory.target_student == student_id)
+                )
+            )).\
+            order_by(asc(DeliveryHistory.delivered_at)).\
+            all()
+
+        # to_dict()を使用するとJSON型を解析できない
+        for delivery in deliveries:
+            deliveriesInfo.append({
+                "created_at": delivery.created_at,
+                "delivered_at": delivery.delivered_at,
+                "delivery_contents": delivery.delivery_contents,
+                "delivery_division": delivery.delivery_division,
+                "delivery_id": delivery.delivery_id,
+                "delivery_name": delivery.delivery_name,
+                "delivery_schedule": delivery.delivery_schedule,
+                "school_id": delivery.school_id,
+                "staff_id": delivery.staff_id,
+                "target_class": delivery.target_class,
+                "target_grade": delivery.target_grade,
+                "target_student": delivery.target_student,
+                "updated_at": delivery.updated_at
+            })
+
+    return {
+        "statusCode": 200,
+        "deliveries": deliveriesInfo
     }
