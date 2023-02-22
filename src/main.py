@@ -162,15 +162,6 @@ def searchParentByUserId():
             filter(Parents.user_id == userId).\
             first()
         if parent:
-            # parentInfo = {
-            #     "parent_id": parent.parent_id,
-            #     "last_name": parent.name,
-            #     "first_name": parent._name,
-            #     "last_name_kana": parent.last_name_kana,
-            #     "first_name_kana": parent.first_name_kana,
-            #     "relationship_code": parent.relationship_code,
-            #     "user_id": parent.user_id
-            # }
             parentInfo = Parents.to_dict_relationship(parent)
 
     # 保護者の情報を返却
