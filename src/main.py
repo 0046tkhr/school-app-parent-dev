@@ -258,7 +258,7 @@ def search_latest_delivery():
                 and_(DeliveryHistory.delivery_division == "CLASS", DeliveryHistory.target_class == classroom_id),
                 and_(DeliveryHistory.delivery_division == "PERSONAL", DeliveryHistory.target_student == student_id)
             )).\
-            order_by(asc(DeliveryHistory.delivered_at)).\
+            order_by(desc(DeliveryHistory.delivered_at)).\
             limit(limit).\
             all()
         # to_dict()を使用するとJSON型を解析できない
@@ -332,7 +332,7 @@ def search_all_delivery():
                     and_(DeliveryHistory.delivery_division == "PERSONAL", DeliveryHistory.target_student == student_id)
                 )
             )).\
-            order_by(asc(DeliveryHistory.delivered_at)).\
+            order_by(desc(DeliveryHistory.delivered_at)).\
             all()
 
         # to_dict()を使用するとJSON型を解析できない
