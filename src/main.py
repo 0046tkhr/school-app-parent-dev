@@ -230,7 +230,7 @@ def linkRelation():
         if not target_security_key.parent_id:
             if target_security_key.is_delete == 0:
                 if target_security_key.expire_time < now:
-                    target_security_key.parents_id = parent_id
+                    target_security_key.parent_id = parent_id
                 else:
                     # 期限切れ
                     errFlag = 1
