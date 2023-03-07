@@ -227,7 +227,7 @@ def linkRelation():
                 "statusCode": 500
             }
 
-    print('target_security_key', target_security_key)
+        print('target_security_key', target_security_key)
 
         now = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
         errFlag = 0
