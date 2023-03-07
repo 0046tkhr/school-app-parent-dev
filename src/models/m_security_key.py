@@ -18,7 +18,7 @@ class SecurityKey(Base):
     student_id = Column('student_id', String(14), comment='生徒ID')
     security_key = Column('security_key', String(8), comment='セキュリティキー')
     expire_time = Column('expire_time', DATETIME, comment='有効期限')
-    parents_id = Column('parents_id', Integer, comment='保護者id')
+    parent_id = Column('parent_id', Integer, comment='保護者id')
     is_delete = Column('is_delete', Integer, comment='削除フラグ')
     
     # TODO 外部制約設定を設定する
