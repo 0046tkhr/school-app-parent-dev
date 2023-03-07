@@ -216,16 +216,16 @@ def linkRelation():
     # 生徒情報テーブルの該当レコードを更新
     studentInfo = ""
     with session_scope() as session:
-        try:
-            target_security_key = session.query(SecurityKey).\
-                filter(SecurityKey.security_key == security_key).\
-                one()
-        except:
-            print('1件じゃないorセキュリティキーない')
-            # 1件じゃないorセキュリティキーない
-            return {
-                "statusCode": 500
-            }
+        # try:
+        target_security_key = session.query(SecurityKey).\
+            filter(SecurityKey.security_key == security_key).\
+            one()
+        # except:
+        #     print('1件じゃないorセキュリティキーない')
+        #     # 1件じゃないorセキュリティキーない
+        #     return {
+        #         "statusCode": 500
+        #     }
 
     print('target_security_key', target_security_key)
 
