@@ -13,6 +13,7 @@ from models.m_students import *
 from models.m_classroom import *
 from models.m_grade import *
 from models.t_delivery_history import *
+from models.m_security_key import *
 
 # import json
 import hashlib
@@ -211,17 +212,53 @@ def linkRelation():
     # 生徒情報テーブルの該当レコードを更新
     studentInfo = ""
     with session_scope() as session:
-        student = session.query(Students).\
-            filter(Students.security_key == security_key).\
-            first()
-        # 保護者情報とまだ紐づいていないなら新規紐づけ
-        if not student.parent_id:
-            student.parent_id = parent_id
-        else:
+        try:
+            target_security_key = session.query(SecurityKey).\
+                filter(SecurityKey.security_key == security_key).\
+                one()
+        except:
+            # 1件じゃないorセキュリティキーない
             return {
                 "statusCode": 500
             }
+
+
+        now = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
+        errFlag = 0
+
+        # 保護者情報とまだ紐づいていないなら新規紐づけ
+        if not target_security_key.parent_id:
+            if target_security_key.is_delete == 0:
+                if target_security_key.expire_time < now:
+                    target_security_key.parent_id = parent_id
+                else:
+                    # 期限切れ
+                    errFlag = 1
+                    errText = 'out-of-date'
+            else:
+                # 削除済み
+                errFlag = 1
+                errText = 'deleted-security-key'
+        else:
+            # 埋まってる
+            errFlag = 1
+            errText = 'already-exists'
+
+        if(errFlag == 1):
+            return {
+                "statusCode": 500,
+                "body" : errText
+            }
+
+        student = session.query(Students).\
+            filter(Students.student_id == target_security_key.student_id).\
+            first()
+
+        if student: # 保護者一人しか入らないので生徒に紐づく保護者情報の登録方法変える必要あり TODO
+            student.parent_id = parent_id 
+
         studentInfo = Students.to_dict_relationship(student)
+
     session.commit()
     return {
         "statusCode": 200,
