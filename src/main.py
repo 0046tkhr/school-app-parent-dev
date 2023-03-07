@@ -120,7 +120,7 @@ def createParent():
     first_name = event['first_name']
     last_name_kana = event['last_name_kana']
     first_name_kana = event['first_name_kana']
-    relationship_code = event['relationship_code']
+    # relationship_code = event['relationship_code']
     user_id = event['user_id']
 
     # 保護者マスタにレコードを登録
@@ -130,7 +130,7 @@ def createParent():
             first_name = first_name,
             last_name_kana = last_name_kana,
             first_name_kana = first_name_kana,
-            relationship_code = relationship_code,
+            # relationship_code = relationship_code,
             user_id = user_id
         )
         session.add(parent)
