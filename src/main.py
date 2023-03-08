@@ -221,13 +221,10 @@ def linkRelation():
                 filter(SecurityKey.security_key == security_key).\
                 one()
         except:
-            print('1件じゃないorセキュリティキーない')
             # 1件じゃないorセキュリティキーない
             return {
                 "statusCode": 500
             }
-
-        print('target_security_key', target_security_key)
 
         now = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
         errFlag = 0
