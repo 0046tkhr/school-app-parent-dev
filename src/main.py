@@ -258,7 +258,7 @@ def linkRelation():
             first()
 
         if student: # 保護者一人しか入らないので生徒に紐づく保護者情報の登録方法変える必要あり TODO
-            student.parent_id = parent_id
+            student.parent_id_1 = parent_id
 
         studentInfo = Students.to_dict_relationship(student)
     session.commit()
