@@ -180,21 +180,23 @@ def searchStudentByParentId():
     # parentIdに紐づく生徒情報を全て取得
     student_info_list = []
     with session_scope() as session:
-        students = session.query(Students).\
-            filter(Students.parent_id == parent_id).\
+        students = session.query(Students, SecurityKey).\
+            filter(Students.student_id == SecurityKey.student_id).\
+            filter(SecurityKey.parent_id == parent_id).\
+            filter(SecurityKey.is_delete == 0).\
             all()
         for student in students:
             student_info_list.append({
-                "student_id": student.student_id,
-                "school_id": student.school_id,
-                "parent_id": student.parent_id,
-                "last_name": student.last_name,
-                "last_name_kana": student.last_name_kana,
-                "first_name": student.first_name,
-                "first_name_kana": student.first_name_kana,
-                "number": student.number,
-                "classroom_id": student.classroom_id,
-                "security_key": student.security_key
+                "student_id": student.Students.student_id,
+                "school_id": student.Students.school_id,
+                "parent_id": student.Students.parent_id,
+                "last_name": student.Students.last_name,
+                "last_name_kana": student.Students.last_name_kana,
+                "first_name": student.Students.first_name,
+                "first_name_kana": student.Students.first_name_kana,
+                "number": student.Students.number,
+                "classroom_id": student.Students.classroom_id,
+                "security_key": student.Students.security_key
             })
 
     # 生徒情報を返却
