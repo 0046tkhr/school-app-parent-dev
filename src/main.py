@@ -235,19 +235,24 @@ def linkRelation():
         # 保護者情報とまだ紐づいていないなら新規紐づけ
         if not target_security_key.parent_id:
             if target_security_key.is_delete == 0:
-                if time.strptime(target_security_key.expire_time, "%m/%d/%Y") < now:
+                if target_security_key.expire_time < now:
                     print('追加できそう')
                     target_security_key.parent_id = parent_id
                 else:
                     # 期限切れ
+                    print('期限切れ')
+                    print('target_security_key.expire_time', target_security_key.expire_time)
+                    print('type(target_security_key.expire_time)', type(target_security_key.expire_time))
                     errFlag = 1
                     errText = 'out-of-date'
             else:
                 # 削除済み
+                print('削除済み')
                 errFlag = 1
                 errText = 'deleted-security-key'
         else:
             # 埋まってる
+            print('埋まってる')
             errFlag = 1
             errText = 'already-exists'
 
