@@ -257,9 +257,19 @@ def linkRelation():
             filter(Students.student_id == target_security_key.student_id).\
             first()
 
-        if student: # 保護者一人しか入らないので生徒に紐づく保護者情報の登録方法変える必要あり TODO
-            student.parent_id_1 = parent_id
-
+        if student: # studentのparent_id_n 空の場所に挿入する
+            if not student.parent_id_1:
+                student.parent_id_1 = parent_id
+            elif not student.parent_id_2:
+                student.parent_id_1 = parent_id
+            elif not student.parent_id_3:
+                student.parent_id_1 = parent_id
+            elif not student.parent_id_4:
+                student.parent_id_1 = parent_id
+            else:
+                return {
+                    "statusCode": 500,
+                }
         studentInfo = Students.to_dict_relationship(student)
     session.commit()
     return {
