@@ -212,22 +212,20 @@ def linkRelation():
     parent_id = event['parentId']
     security_key = event['securityKey']
     
-    print('parent_id', parent_id)
-    print('security_key', security_key)
     
     # 生徒情報テーブルの該当レコードを更新
     studentInfo = ""
     with session_scope() as session:
-        # try:
-        target_security_key = session.query(SecurityKey).\
-            filter(SecurityKey.security_key == security_key).\
-            one()
-        # except:
-        #     print('1件じゃないorセキュリティキーない')
-        #     # 1件じゃないorセキュリティキーない
-        #     return {
-        #         "statusCode": 500
-        #     }
+        try:
+            target_security_key = session.query(SecurityKey).\
+                filter(SecurityKey.security_key == security_key).\
+                one()
+        except:
+            print('1件じゃないorセキュリティキーない')
+            # 1件じゃないorセキュリティキーない
+            return {
+                "statusCode": 500
+            }
 
         print('target_security_key', target_security_key)
 
@@ -238,28 +236,21 @@ def linkRelation():
         if not target_security_key.parent_id:
             if target_security_key.is_delete == 0:
                 if target_security_key.expire_time > now:
-                    print('追加できそう')
                     target_security_key.parent_id = parent_id
                 else:
                     # 期限切れ
-                    print('期限切れ')
-                    print('target_security_key.expire_time', target_security_key.expire_time)
-                    print('type(target_security_key.expire_time)', type(target_security_key.expire_time))
                     errFlag = 1
                     errText = 'out-of-date'
             else:
                 # 削除済み
-                print('削除済み')
                 errFlag = 1
                 errText = 'deleted-security-key'
         else:
             # 埋まってる
-            print('埋まってる')
             errFlag = 1
             errText = 'already-exists'
 
         if(errFlag == 1):
-            print('エラーでた')
             return {
                 "statusCode": 500,
                 "body" : errText
@@ -268,15 +259,12 @@ def linkRelation():
         student = session.query(Students).\
             filter(Students.student_id == target_security_key.student_id).\
             first()
-        print('student', student)
 
         if student: # 保護者一人しか入らないので生徒に紐づく保護者情報の登録方法変える必要あり TODO
-            student.parent_id = parent_id 
+            student.parent_id = parent_id
 
         studentInfo = Students.to_dict_relationship(student)
-        print('studentInfo', studentInfo)
     session.commit()
-    print('さいご')
     return {
         "statusCode": 200,
         "student": studentInfo
