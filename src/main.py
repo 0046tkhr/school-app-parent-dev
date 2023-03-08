@@ -235,7 +235,7 @@ def linkRelation():
         # 保護者情報とまだ紐づいていないなら新規紐づけ
         if not target_security_key.parent_id:
             if target_security_key.is_delete == 0:
-                if target_security_key.expire_time < now:
+                if target_security_key.expire_time > now:
                     print('追加できそう')
                     target_security_key.parent_id = parent_id
                 else:
@@ -272,7 +272,7 @@ def linkRelation():
             student.parent_id = parent_id 
 
         studentInfo = Students.to_dict_relationship(student)
-
+        print('studentInfo', studentInfo)
     session.commit()
     print('さいご')
     return {
