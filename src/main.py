@@ -223,7 +223,8 @@ def linkRelation():
         except:
             # 1件じゃないorセキュリティキーない
             return {
-                "statusCode": 500
+                "statusCode": 500,
+                "body" : 'no-security_key'
             }
 
         now = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
