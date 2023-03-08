@@ -46,73 +46,73 @@ def migration():
     }
     return response
 
-@app.route("/api/schoolappParent/login", methods=["POST"])
-def login():
-    print('login')
-    event = request.get_json()
+# @app.route("/api/schoolappParent/login", methods=["POST"])
+# def login():
+#     print('login')
+#     event = request.get_json()
 
-    # ログイン情報の取得
-    id = event['id']
-    password = event['password']
+#     # ログイン情報の取得
+#     id = event['id']
+#     password = event['password']
 
-    # パスワードのハッシュ化
-    password_hashed = hashlib.sha256(password.encode("utf-8")).hexdigest()
+#     # パスワードのハッシュ化
+#     password_hashed = hashlib.sha256(password.encode("utf-8")).hexdigest()
 
-    # ログイン情報から、紐づく保護者を検索
-    parent_info = {}
-    with session_scope() as session:
-        parent = session.query(Parents).\
-            filter(Parents.parent_id == id, Parents.password == password_hashed).\
-            first()
+#     # ログイン情報から、紐づく保護者を検索
+#     parent_info = {}
+#     with session_scope() as session:
+#         parent = session.query(Parents).\
+#             filter(Parents.parent_id == id, Parents.password == password_hashed).\
+#             first()
 
-        # 保護者情報として保存
-        parent_info = {
-            "parent_id": parent.parent_id,
-            "school_id": parent.school_id,
-            "last_name": parent.last_name,
-            "first_name": parent.first_name,
-            "last_name_kana": parent.last_name_kana,
-            "first_name_kana": parent.first_name_kana,
-            "uid_1": parent.uid_1,
-            "uid_2": parent.uid_2
-        }
+#         # 保護者情報として保存
+#         parent_info = {
+#             "parent_id": parent.parent_id,
+#             "school_id": parent.school_id,
+#             "last_name": parent.last_name,
+#             "first_name": parent.first_name,
+#             "last_name_kana": parent.last_name_kana,
+#             "first_name_kana": parent.first_name_kana,
+#             "uid_1": parent.uid_1,
+#             "uid_2": parent.uid_2
+#         }
 
-        # login_codeを用意
-        login_code = 1 if parent else 0
+#         # login_codeを用意
+#         login_code = 1 if parent else 0
 
-    # 保護者情報から、紐づく生徒を検索
-    with session_scope() as session:
-        students = session.query(Students).\
-            filter(Students.parent_id == parent_info['parent_id']).\
-            all()
+#     # 保護者情報から、紐づく生徒を検索
+#     with session_scope() as session:
+#         students = session.query(Students).\
+#             filter(Students.parent_id == parent_info['parent_id']).\
+#             all()
 
-        # 保護者情報に追加
-        parent_info['students'] = []
-        for student in students:
-            parent_info['students'].append({
-                "student_id": student.student_id,
-                "class_name": student.class_name,
-                "grade": student.grade,
-                "number": student.number,
-                "last_name": student.last_name,
-                "first_name": student.first_name,
-                "last_name_kana": student.last_name_kana,
-                "first_name_kana": student.first_name_kana,
-            })
+#         # 保護者情報に追加
+#         parent_info['students'] = []
+#         for student in students:
+#             parent_info['students'].append({
+#                 "student_id": student.student_id,
+#                 "class_name": student.class_name,
+#                 "grade": student.grade,
+#                 "number": student.number,
+#                 "last_name": student.last_name,
+#                 "first_name": student.first_name,
+#                 "last_name_kana": student.last_name_kana,
+#                 "first_name_kana": student.first_name_kana,
+#             })
 
-    # login_codeが1ならログイン成功
-    if login_code == 1:
-        response = {
-            "statusCode": 200,
-            "login_code": login_code,
-            "parent_info": parent_info
-        }
-    else:
-        response ={
-            "statusCode": 500,
-        }
+#     # login_codeが1ならログイン成功
+#     if login_code == 1:
+#         response = {
+#             "statusCode": 200,
+#             "login_code": login_code,
+#             "parent_info": parent_info
+#         }
+#     else:
+#         response ={
+#             "statusCode": 500,
+#         }
 
-    return response
+#     return response
 
 @app.route("/api/schoolappParent/createParent", methods=["POST"])
 def createParent():
@@ -189,7 +189,7 @@ def searchStudentByParentId():
             student_info_list.append({
                 "student_id": student.Students.student_id,
                 "school_id": student.Students.school_id,
-                "parent_id": student.Students.parent_id,
+                # "parent_id": student.Students.parent_id,
                 "last_name": student.Students.last_name,
                 "last_name_kana": student.Students.last_name_kana,
                 "first_name": student.Students.first_name,
