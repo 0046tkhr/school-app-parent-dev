@@ -241,7 +241,6 @@ def linkRelation():
     parent_id = event['parentId']
     security_key = event['securityKey']
     
-    
     # 生徒情報テーブルの該当レコードを更新
     studentInfo = ""
     with session_scope() as session:
@@ -253,7 +252,7 @@ def linkRelation():
             # 1件じゃないorセキュリティキーない
             return {
                 "statusCode": 500,
-                "body" : 'no-security_key'
+                "body" : 'invalid-security_key'
             }
 
         now = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
@@ -275,7 +274,7 @@ def linkRelation():
         else:
             # 埋まってる
             errFlag = 1
-            errText = 'already-exists'
+            errText = 'already-use'
 
         if(errFlag == 1):
             return {
@@ -287,7 +286,16 @@ def linkRelation():
             filter(Students.student_id == target_security_key.student_id).\
             first()
 
-        if student: # studentのparent_id_n 空の場所に挿入する
+        # 既に別のセキュリティキーで紐づいている生徒出ないかチェック
+        if (student.parent_id_1 == parent_id) or (student.parent_id_2 == parent_id) or (student.parent_id_3 == parent_id) or (student.parent_id_4 == parent_id):
+            session.rollback()
+            return {
+                "statusCode": 500,
+                "body": 'same-student'
+            }
+
+        # studentのparent_id_n 空の場所に挿入する
+        if student:
             if not student.parent_id_1:
                 student.parent_id_1 = parent_id
             elif not student.parent_id_2:
