@@ -117,43 +117,44 @@ def migration():
 # 保護者新規作成
 @app.route("/api/schoolappParent/createParent", methods=["POST"])
 def createParent():
-    # payloadの取得
-    event = request.get_json()
-    last_name = event['last_name']
-    first_name = event['first_name']
-    last_name_kana = event['last_name_kana']
-    first_name_kana = event['first_name_kana']
-    # relationship_code = event['relationship_code']
-    user_id = event['user_id']
-
-    # parent_idの作成
-
-    # P+YYMM＋連番4桁 例：P23030001
-    # 年度の下2桁
-    now = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
-    year_start = datetime.datetime(now.year, 4, 1)  # 年度の最初の日を取得（4月1日）
-    if now < year_start:  # 現在の日付が年度の最初の日より前の場合、前年度とみなす
-        year = now.year - 1
-    else:
-        year = now.year
-
-    month = now.month
-
-    result = session.query(func.max(Parents.parent_id)).scalar()
-
-    maxGradeId = 0
-
-    if (result is None or len(result) != 12):
-        maxGradeId = 0
-    else:
-        # 最大値から先頭10文字を除いて数値に変換
-        maxGradeId = int(result[5:])
-
-    parentIdValue = 'P' + str(year)[-2:] + str(month).zfill(2)
-    newParentId = parentIdValue + str(maxGradeId + 1).zfill(4)
-
-    # 保護者マスタにレコードを登録
     with session_scope() as session:
+        # payloadの取得
+        event = request.get_json()
+        last_name = event['last_name']
+        first_name = event['first_name']
+        last_name_kana = event['last_name_kana']
+        first_name_kana = event['first_name_kana']
+        # relationship_code = event['relationship_code']
+        user_id = event['user_id']
+
+        # parent_idの作成
+
+        # P+YYMM＋連番4桁 例：P23030001
+        # 年度の下2桁
+        now = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
+        year_start = datetime.datetime(now.year, 4, 1)  # 年度の最初の日を取得（4月1日）
+        if now < year_start:  # 現在の日付が年度の最初の日より前の場合、前年度とみなす
+            year = now.year - 1
+        else:
+            year = now.year
+
+        month = now.month
+
+        result = session.query(func.max(Parents.parent_id)).scalar()
+
+        maxGradeId = 0
+
+        if (result is None or len(result) != 12):
+            maxGradeId = 0
+        else:
+            # 最大値から先頭10文字を除いて数値に変換
+            maxGradeId = int(result[5:])
+
+        parentIdValue = 'P' + str(year)[-2:] + str(month).zfill(2)
+        newParentId = parentIdValue + str(maxGradeId + 1).zfill(4)
+
+        # 保護者マスタにレコードを登録
+    
         parent = Parents(
             parent_id = newParentId,
             last_name = last_name,
