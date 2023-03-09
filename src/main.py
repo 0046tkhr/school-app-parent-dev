@@ -144,7 +144,7 @@ def createParent():
 
         maxGradeId = 0
 
-        if (result is None or len(result) != 12):
+        if (result is None or len(result) != 9):
             maxGradeId = 0
         else:
             # 最大値から先頭10文字を除いて数値に変換
