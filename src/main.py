@@ -330,7 +330,7 @@ def search_latest_delivery():
             filter(Students.student_id == student_id).\
             first()
         studentInfo = Students.to_dict_relationship(student)
-
+    
     deliveriesInfo = []
     # 指定された件数の学校全体,学年全体,クラス,生徒個人に向けた配信を取得
     with session_scope() as session:
@@ -374,6 +374,7 @@ def search_latest_delivery():
                 and_(DeliveryHistory.delivery_division == "CLASS", DeliveryHistory.target_class == classroom_id),
                 and_(DeliveryHistory.delivery_division == "PERSONAL", DeliveryHistory.target_student == student_id)
             ))
+            .group_by(DeliveryHistory.delivery_id)
             .order_by(desc(DeliveryHistory.delivered_at))
             .limit(limit)
             .all()
@@ -408,6 +409,7 @@ def search_latest_delivery():
         "deliveries": deliveriesInfo
     }
 
+#TODO 年度の概念の考慮
 @app.route("/api/schoolappParent/searchMonthDelivery", methods=["POST"])
 def search_all_delivery():
     # リクエストから値を取得
@@ -426,7 +428,7 @@ def search_all_delivery():
         "month": 1 if (month == 12) else month + 1 
     }
 
-    studentInfo = null
+    studentInfo = None
     # 生徒の情報を取得(学校, 学年, 組, 出席番号)
     with session_scope() as session:
         student = session.query(Students).\
@@ -484,6 +486,7 @@ def search_all_delivery():
                     and_(DeliveryHistory.delivery_division == "PERSONAL", DeliveryHistory.target_student == student_id)
                 )
             ))
+            .group_by(DeliveryHistory.delivery_id)
             .order_by(desc(DeliveryHistory.delivered_at))
             .all()
         )
