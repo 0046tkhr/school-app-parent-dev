@@ -12,15 +12,12 @@ class Parents(Base):
         'comment': '保護者を管理する'
     }
     # テーブルのカラム
-    parent_id = Column('parent_id', String(8), primary_key=True, comment='保護者ID')
-    school_id = Column('school_id', String(6), comment='学校ID')
-    password = Column('password', String(128), comment='パスワード')
-    last_name = Column('last_name', String(30), comment='氏名（姓）')
-    first_name = Column('first_name', String(30), comment='氏名（名）')
-    last_name_kana = Column('last_name_kana', String(30), comment='氏名カナ（姓）')
-    first_name_kana = Column('first_name_kana', String(30), comment='氏名カナ（名）')
-    uid_1 = Column('uid_1', String(33), comment='UID1')
-    uid_2 = Column('uid_2', String(33), comment='UID2')
+    parent_id = Column('parent_id', Integer, primary_key=True, comment='保護者ID')
+    last_name = Column('last_name', String(30), comment='保護者氏名(姓)')
+    first_name = Column('first_name', String(30), comment='保護者氏名(名)')
+    last_name_kana = Column('last_name_kana', String(30), comment='保護者氏名(姓・カナ)')
+    first_name_kana = Column('first_name_kana', String(30), comment='保護者氏名(名・カナ)')
+    user_id = Column('user_id', String(33), comment='ユーザーID')
     expiration_time = Column('expiration_time', DATETIME, comment='有効期限')
     relationship_code = Column('relationship_code', String(3), comment='続柄コード')
     created_at = Column('created_at', DATETIME, comment='作成日')
@@ -31,3 +28,16 @@ class Parents(Base):
     # customer_id = Column('customer_id', Integer, comment='得意先ID')
     # 外部制約設定
     # customer = relationship("Customer", back_populates="customerStaffs", foreign_keys=[customer_id])
+    
+    def to_dict_relationship(self):
+        model = self.to_dict()
+        print(model)
+        return model
+    def query_to_dict_relationship(result):
+        # 変数を初期化する
+        items = []
+        # 結果を処理する
+        for row in result:
+            model = row.to_dict_relationship()
+            items.append(model)
+        return items
