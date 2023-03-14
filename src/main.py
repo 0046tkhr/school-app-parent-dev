@@ -320,7 +320,7 @@ def search_latest_delivery():
     # リクエストから値を取得
     event = request.get_json()
     student_id = event['student_id']
-    limit = event['limit']
+    # limit = event['limit']
 
     studentInfo = null
     # 生徒の情報を取得(学校, 学年, 組, 出席番号)
@@ -376,7 +376,7 @@ def search_latest_delivery():
             ))
             .group_by(DeliveryHistory.delivery_id)
             .order_by(desc(DeliveryHistory.delivered_at))
-            .limit(limit)
+            # .limit(limit)
             .all()
         )
         # to_dict()を使用するとJSON型を解析できない
