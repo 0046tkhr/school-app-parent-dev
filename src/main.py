@@ -205,29 +205,39 @@ def searchStudentByParentId():
     # userIdの取得
     event = request.get_json()
     parent_id = event['parentId']
+    print('parent_id', parent_id)
     
     # parentIdに紐づく生徒情報を全て取得
     student_info_list = []
     with session_scope() as session:
-        students = session.query(Students, SecurityKey).\
-            filter(Students.student_id == SecurityKey.student_id).\
-            filter(SecurityKey.parent_id == parent_id).\
-            filter(SecurityKey.is_delete == 0).\
-            all()
+        students = (
+            session.query(Students, SecurityKey, Classroom, Grade)
+            .join(SecurityKey, Students.student_id == SecurityKey.student_id)
+            .join(Classroom, Students.classroom_id == Classroom.classroom_id)
+            .join(Grade, Classroom.grade_id == Grade.grade_id)
+            .filter(
+                SecurityKey.parent_id == parent_id,
+                SecurityKey.is_delete == 0
+            )
+            .all()
+        )
         for student in students:
+            relation_classroom_info = student.Classroom.to_dict()
+            relation_grade_info = student.Grade.to_dict()
             student_info_list.append({
                 "student_id": student.Students.student_id,
                 "school_id": student.Students.school_id,
-                # "parent_id": student.Students.parent_id,
                 "last_name": student.Students.last_name,
                 "last_name_kana": student.Students.last_name_kana,
                 "first_name": student.Students.first_name,
                 "first_name_kana": student.Students.first_name_kana,
                 "number": student.Students.number,
                 "classroom_id": student.Students.classroom_id,
-                "security_key": student.Students.security_key
+                "classroom_info": relation_classroom_info,
+                "grade_info": relation_grade_info
             })
 
+    print('student_info_list', student_info_list)
     # 生徒情報を返却
     return {
         "students": student_info_list
@@ -241,7 +251,6 @@ def linkRelation():
     parent_id = event['parentId']
     security_key = event['securityKey']
     
-    
     # 生徒情報テーブルの該当レコードを更新
     studentInfo = ""
     with session_scope() as session:
@@ -253,7 +262,7 @@ def linkRelation():
             # 1件じゃないorセキュリティキーない
             return {
                 "statusCode": 500,
-                "body" : 'no-security_key'
+                "body" : 'invalid-security_key'
             }
 
         now = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
@@ -276,7 +285,7 @@ def linkRelation():
         else:
             # 埋まってる
             errFlag = 1
-            errText = 'already-exists'
+            errText = 'already-use'
 
         if(errFlag == 1):
             return {
@@ -288,7 +297,16 @@ def linkRelation():
             filter(Students.student_id == target_security_key.student_id).\
             first()
 
-        if student: # studentのparent_id_n 空の場所に挿入する
+        # 既に別のセキュリティキーで紐づいている生徒出ないかチェック
+        if (student.parent_id_1 == parent_id) or (student.parent_id_2 == parent_id) or (student.parent_id_3 == parent_id) or (student.parent_id_4 == parent_id):
+            session.rollback()
+            return {
+                "statusCode": 500,
+                "body": 'same-student'
+            }
+
+        # studentのparent_id_n 空の場所に挿入する
+        if student:
             if not student.parent_id_1:
                 student.parent_id_1 = parent_id
             elif not student.parent_id_2:
@@ -302,6 +320,23 @@ def linkRelation():
                     "statusCode": 500,
                 }
         studentInfo = Students.to_dict_relationship(student)
+        
+        # 生徒に紐づく学年・クラスの情報を取得
+        relation_classroom_id = studentInfo.get('classroom_id')
+        print('relation_classroom_id', relation_classroom_id)
+        relation_classgrade = (
+            session.query(Classroom, Grade)
+            .join(Grade, Classroom.grade_id == Grade.grade_id)
+            .filter(Classroom.classroom_id == relation_classroom_id)
+            .one()
+        )
+        print('relation_classgrade', relation_classgrade)
+        relation_classroom_info = relation_classgrade.Classroom.to_dict()
+        relation_grade_info = relation_classgrade.Grade.to_dict()
+        studentInfo['classroom_info'] = relation_classroom_info
+        studentInfo['grade_info'] = relation_grade_info
+        print('studentInfo', studentInfo)
+        
     session.commit()
     return {
         "statusCode": 200,
@@ -313,17 +348,19 @@ def search_latest_delivery():
     # リクエストから値を取得
     event = request.get_json()
     student_id = event['student_id']
-    limit = event['limit']
+    # limit = event['limit']
 
     studentInfo = null
     # 生徒の情報を取得(学校, 学年, 組, 出席番号)
     with session_scope() as session:
-        student = session.query(Students).\
-            join(Classroom, Students.classroom_id == Classroom.classroom_id, isouter = True).\
-            filter(Students.student_id == student_id).\
-            first()
+        student = (
+            session.query(Students)
+            .join(Classroom, Students.classroom_id == Classroom.classroom_id, isouter = True)
+            .filter(Students.student_id == student_id)
+            .first()
+        )
         studentInfo = Students.to_dict_relationship(student)
-
+    
     deliveriesInfo = []
     # 指定された件数の学校全体,学年全体,クラス,生徒個人に向けた配信を取得
     with session_scope() as session:
@@ -367,8 +404,9 @@ def search_latest_delivery():
                 and_(DeliveryHistory.delivery_division == "CLASS", DeliveryHistory.target_class == classroom_id),
                 and_(DeliveryHistory.delivery_division == "PERSONAL", DeliveryHistory.target_student == student_id)
             ))
+            .group_by(DeliveryHistory.delivery_id)
             .order_by(desc(DeliveryHistory.delivered_at))
-            .limit(limit)
+            # .limit(limit)
             .all()
         )
         # to_dict()を使用するとJSON型を解析できない
@@ -401,6 +439,7 @@ def search_latest_delivery():
         "deliveries": deliveriesInfo
     }
 
+#TODO 年度の概念の考慮
 @app.route("/api/schoolappParent/searchMonthDelivery", methods=["POST"])
 def search_all_delivery():
     # リクエストから値を取得
@@ -419,7 +458,7 @@ def search_all_delivery():
         "month": 1 if (month == 12) else month + 1 
     }
 
-    studentInfo = null
+    studentInfo = None
     # 生徒の情報を取得(学校, 学年, 組, 出席番号)
     with session_scope() as session:
         student = session.query(Students).\
@@ -477,6 +516,7 @@ def search_all_delivery():
                     and_(DeliveryHistory.delivery_division == "PERSONAL", DeliveryHistory.target_student == student_id)
                 )
             ))
+            .group_by(DeliveryHistory.delivery_id)
             .order_by(desc(DeliveryHistory.delivered_at))
             .all()
         )

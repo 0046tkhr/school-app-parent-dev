@@ -27,7 +27,8 @@ class Students(Base):
     updated_at = Column('updated_at', DATETIME, comment='更新日')
     last_updated_by = Column('last_updated_by', String(30), comment='最終更新者')
     classroom_id = Column('classroom_id', Integer, ForeignKey("m_classroom.classroom_id"), comment='クラスID')
-    security_key = Column('security_key', String(8), comment='セキュリティーキー')
+    security_key = Column('security_key', Integer, comment='セキュリティーキー')
+    is_delete = Column('is_delete', Integer, comment='削除フラグ')
     
     # 外部制約
     classroom = relationship("Classroom", back_populates="students", foreign_keys=[classroom_id])
