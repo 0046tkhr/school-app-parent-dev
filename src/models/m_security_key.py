@@ -21,7 +21,7 @@ class SecurityKey(Base):
     parent_id = Column('parent_id', Integer, comment='保護者id')
     is_delete = Column('is_delete', Integer, comment='削除フラグ')
     use_start_date = Column('use_start_date', DATE, comment='有効期限')
-
+    
     # TODO 外部制約設定を設定する
     # parent = relationship("Parents", back_populates="students", foreign_keys=[parent_id])
 

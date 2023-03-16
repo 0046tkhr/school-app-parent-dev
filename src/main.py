@@ -243,6 +243,7 @@ def searchStudentByParentId():
         "students": student_info_list
     }
 
+# セキュリティキーで保護者と生徒紐づけ
 @app.route("/api/schoolappParent/linkRelation", methods=["POST"])
 def linkRelation():
     print('linkRelation')
@@ -273,6 +274,7 @@ def linkRelation():
             if target_security_key.is_delete == 0:
                 if target_security_key.expire_time > now:
                     target_security_key.parent_id = parent_id
+                    target_security_key.use_start_date = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
                 else:
                     # 期限切れ
                     errFlag = 1
@@ -296,7 +298,7 @@ def linkRelation():
             filter(Students.student_id == target_security_key.student_id).\
             first()
 
-        # 既に別のセキュリティキーで紐づいている生徒出ないかチェック
+        # 既に別のセキュリティキーで紐づいている生徒でないかチェック
         if (student.parent_id_1 == parent_id) or (student.parent_id_2 == parent_id) or (student.parent_id_3 == parent_id) or (student.parent_id_4 == parent_id):
             session.rollback()
             return {
@@ -306,14 +308,14 @@ def linkRelation():
 
         # studentのparent_id_n 空の場所に挿入する
         if student:
-            if not student.parent_id_1:
+            if student.parent_id_1 == None:
                 student.parent_id_1 = parent_id
-            elif not student.parent_id_2:
-                student.parent_id_1 = parent_id
-            elif not student.parent_id_3:
-                student.parent_id_1 = parent_id
-            elif not student.parent_id_4:
-                student.parent_id_1 = parent_id
+            elif student.parent_id_2 == None:
+                student.parent_id_2 = parent_id
+            elif student.parent_id_3 == None:
+                student.parent_id_3 = parent_id
+            elif student.parent_id_4 == None:
+                student.parent_id_4 = parent_id
             else:
                 return {
                     "statusCode": 500,
