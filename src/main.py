@@ -445,9 +445,7 @@ def search_latest_delivery_all():
     print("search_latest_delivery_all")
     # リクエストから値を取得
     event = request.get_json()
-    print("event", event)
     student_id_list = event['student_id_list']
-    print("student_id_list", student_id_list)
 
     studentsInfo = None
     # 生徒の情報を取得(学校, 学年, 組, 出席番号)
@@ -458,9 +456,7 @@ def search_latest_delivery_all():
             .filter(Students.student_id.in_(student_id_list))
             .all()
         )
-        print('students', students)
         studentsInfo = Students.query_to_dict_relationship(students)
-        print('studentsInfo', studentsInfo)
 
     deliveriesInfo = []
     # 指定された件数の学校全体,学年全体,クラス,生徒個人に向けた配信を取得
@@ -546,7 +542,6 @@ def search_latest_delivery_all():
                 "delivered_at": delivery.delivered_at,
             })
 
-    print('deliveriesInfo', deliveriesInfo)
     return {
         "statusCode": 200,
         "deliveries": deliveriesInfo
