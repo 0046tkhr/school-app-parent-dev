@@ -205,29 +205,39 @@ def searchStudentByParentId():
     # userIdの取得
     event = request.get_json()
     parent_id = event['parentId']
+    print('parent_id', parent_id)
     
     # parentIdに紐づく生徒情報を全て取得
     student_info_list = []
     with session_scope() as session:
-        students = session.query(Students, SecurityKey).\
-            filter(Students.student_id == SecurityKey.student_id).\
-            filter(SecurityKey.parent_id == parent_id).\
-            filter(SecurityKey.is_delete == 0).\
-            all()
+        students = (
+            session.query(Students, SecurityKey, Classroom, Grade)
+            .join(SecurityKey, Students.student_id == SecurityKey.student_id)
+            .join(Classroom, Students.classroom_id == Classroom.classroom_id)
+            .join(Grade, Classroom.grade_id == Grade.grade_id)
+            .filter(
+                SecurityKey.parent_id == parent_id,
+                SecurityKey.is_delete == 0
+            )
+            .all()
+        )
         for student in students:
+            relation_classroom_info = student.Classroom.to_dict()
+            relation_grade_info = student.Grade.to_dict()
             student_info_list.append({
                 "student_id": student.Students.student_id,
                 "school_id": student.Students.school_id,
-                # "parent_id": student.Students.parent_id,
                 "last_name": student.Students.last_name,
                 "last_name_kana": student.Students.last_name_kana,
                 "first_name": student.Students.first_name,
                 "first_name_kana": student.Students.first_name_kana,
                 "number": student.Students.number,
                 "classroom_id": student.Students.classroom_id,
-                "security_key": student.Students.security_key
+                "classroom_info": relation_classroom_info,
+                "grade_info": relation_grade_info
             })
 
+    print('student_info_list', student_info_list)
     # 生徒情報を返却
     return {
         "students": student_info_list
@@ -309,6 +319,23 @@ def linkRelation():
                     "statusCode": 500,
                 }
         studentInfo = Students.to_dict_relationship(student)
+        
+        # 生徒に紐づく学年・クラスの情報を取得
+        relation_classroom_id = studentInfo.get('classroom_id')
+        print('relation_classroom_id', relation_classroom_id)
+        relation_classgrade = (
+            session.query(Classroom, Grade)
+            .join(Grade, Classroom.grade_id == Grade.grade_id)
+            .filter(Classroom.classroom_id == relation_classroom_id)
+            .one()
+        )
+        print('relation_classgrade', relation_classgrade)
+        relation_classroom_info = relation_classgrade.Classroom.to_dict()
+        relation_grade_info = relation_classgrade.Grade.to_dict()
+        studentInfo['classroom_info'] = relation_classroom_info
+        studentInfo['grade_info'] = relation_grade_info
+        print('studentInfo', studentInfo)
+        
     session.commit()
     return {
         "statusCode": 200,
@@ -325,10 +352,12 @@ def search_latest_delivery():
     studentInfo = null
     # 生徒の情報を取得(学校, 学年, 組, 出席番号)
     with session_scope() as session:
-        student = session.query(Students).\
-            join(Classroom, Students.classroom_id == Classroom.classroom_id, isouter = True).\
-            filter(Students.student_id == student_id).\
-            first()
+        student = (
+            session.query(Students)
+            .join(Classroom, Students.classroom_id == Classroom.classroom_id, isouter = True)
+            .filter(Students.student_id == student_id)
+            .first()
+        )
         studentInfo = Students.to_dict_relationship(student)
     
     deliveriesInfo = []
