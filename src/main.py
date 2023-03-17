@@ -351,7 +351,7 @@ def search_latest_delivery():
     student_id = event['student_id']
     # limit = event['limit']
 
-    studentInfo = null
+    studentInfo = None
     # 生徒の情報を取得(学校, 学年, 組, 出席番号)
     with session_scope() as session:
         student = (
@@ -440,9 +440,116 @@ def search_latest_delivery():
         "deliveries": deliveriesInfo
     }
 
-#TODO 年度の概念の考慮
-@app.route("/api/schoolappParent/searchMonthDelivery", methods=["POST"])
-def search_all_delivery():
+@app.route("/api/schoolappParent/searchLatestDeliveryAll", methods=["POST"])
+def search_latest_delivery_all():
+    print("search_latest_delivery_all")
+    # リクエストから値を取得
+    event = request.get_json()
+    student_id_list = event['student_id_list']
+
+    studentsInfo = None
+    # 生徒の情報を取得(学校, 学年, 組, 出席番号)
+    with session_scope() as session:
+        students = (
+            session.query(Students)
+            .join(Classroom, Students.classroom_id == Classroom.classroom_id, isouter = True)
+            .filter(Students.student_id.in_(student_id_list))
+            .all()
+        )
+        studentsInfo = Students.query_to_dict_relationship(students)
+
+    deliveriesInfo = []
+    # 指定された件数の学校全体,学年全体,クラス,生徒個人に向けた配信を取得
+    with session_scope() as session:
+        school_id_list = []
+        grade_id_list = []
+        classroom_id_list = []
+        student_id_list = []
+        for studentInfo in studentsInfo:
+            school_id = studentInfo['school_id']
+            school_id_list.append(school_id)
+
+            grade_id = studentInfo['classroom']['grade_id']
+            grade_id_list.append(grade_id)
+
+            classroom_id = studentInfo['classroom_id']
+            classroom_id_list.append(classroom_id)
+
+            student_id = studentInfo['student_id']
+            student_id_list.append(student_id)
+
+        Grade_target = aliased(Grade)
+        Grade_class = aliased(Grade)
+        deliveries = (
+            session.query(DeliveryHistory,
+                DeliveryHistory.delivery_id,
+                DeliveryHistory.school_id,
+                DeliveryHistory.delivery_name,
+                DeliveryHistory.delivery_contents,
+                DeliveryHistory.delivery_division,
+                DeliveryHistory.target_grade,
+                (Grade_target.school_grade).label("grade_name_target_grade"),
+                DeliveryHistory.target_class,
+                (Grade_class.school_grade).label("grade_name_target_class"),
+                (Classroom.school_class).label("classroom_name_target_class"),
+                DeliveryHistory.target_student,
+                (Students.last_name).label("student_target_last_name"),
+                (Students.first_name).label("student_target_first_name"),
+                (Students.last_name_kana).label("student_target_last_name_kana"),
+                (Students.first_name_kana).label("student_target_first_name_kana"),
+                DeliveryHistory.staff_id,
+                DeliveryHistory.delivery_schedule,
+                DeliveryHistory.created_at,
+                DeliveryHistory.updated_at,
+                DeliveryHistory.delivered_at,
+            )
+            .join(Grade_target, DeliveryHistory.target_grade == Grade_target.grade_id, isouter = True)
+            .join(Classroom, DeliveryHistory.target_class == Classroom.classroom_id, isouter = True)
+            .join(Grade_class, Classroom.grade_id == Grade_class.grade_id, isouter = True)
+            .join(Students, DeliveryHistory.target_student == Students.student_id, isouter = True)
+            .filter(or_(
+                and_(DeliveryHistory.delivery_division == "SCHOOL", DeliveryHistory.school_id.in_(school_id_list)),
+                and_(DeliveryHistory.delivery_division == "GRADE", DeliveryHistory.target_grade.in_(grade_id_list)),
+                and_(DeliveryHistory.delivery_division == "CLASS", DeliveryHistory.target_class.in_(classroom_id_list)),
+                and_(DeliveryHistory.delivery_division == "PERSONAL", DeliveryHistory.target_student.in_(student_id_list))
+            ))
+            .group_by(DeliveryHistory.delivery_id)
+            .order_by(desc(DeliveryHistory.delivered_at))
+            .all()
+        )
+        # to_dict()を使用するとJSON型を解析できない
+        for delivery in deliveries:
+            deliveriesInfo.append({
+                "delivery_id": delivery.delivery_id,
+                "school_id": delivery.school_id,
+                "delivery_name": delivery.delivery_name,
+                "delivery_contents": delivery.delivery_contents,
+                "delivery_division": delivery.delivery_division,
+                "target_grade": delivery.target_grade,
+                "grade_name_target_grade": delivery.grade_name_target_grade,
+                "target_class": delivery.target_class,
+                "grade_name_target_class": delivery.grade_name_target_class,
+                "classroom_name_target_class": delivery.classroom_name_target_class,
+                "target_student": delivery.target_student,
+                "student_target_last_name": delivery.student_target_last_name,
+                "student_target_first_name": delivery.student_target_first_name,
+                "student_target_last_name_kana": delivery.student_target_last_name_kana,
+                "student_target_first_name_kana": delivery.student_target_first_name_kana,
+                "staff_id": delivery.staff_id,
+                "delivery_schedule": delivery.delivery_schedule,
+                "created_at": delivery.created_at,
+                "updated_at": delivery.updated_at,
+                "delivered_at": delivery.delivered_at,
+            })
+
+    return {
+        "statusCode": 200,
+        "deliveries": deliveriesInfo
+    }
+
+# 現在未使用
+# @app.route("/api/schoolappParent/searchMonthDelivery", methods=["POST"])
+# def search_all_delivery():
     # リクエストから値を取得
     event = request.get_json()
     student_id = event['student_id']
