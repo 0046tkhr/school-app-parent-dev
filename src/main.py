@@ -539,6 +539,7 @@ def search_latest_delivery_all():
                 ),
                 DeliveryHistory.delivered_at >= fiscal_year_delivered_at
             ))
+            .filter(DeliveryHistory.delivery_status == 'DELIVERED')
             .group_by(DeliveryHistory.delivery_id)
             .order_by(desc(DeliveryHistory.delivered_at))
             .all()
