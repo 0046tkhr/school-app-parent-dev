@@ -27,7 +27,7 @@ class DeliveryHistory(Base):
     target_grade = Column('target_grade', Integer, comment='対象学年')
     target_class = Column('target_class', Integer, comment='対象学級')
     target_student = Column('target_student', Integer, comment='対象生徒')
-
+    delivery_status = Column('delivery_status', String(16), comment='配信ステータス')
     # TODO 外部制約設定を設定する
     # parent = relationship("Parents", back_populates="students", foreign_keys=[parent_id])
 
