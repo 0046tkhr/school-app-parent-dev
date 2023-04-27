@@ -180,6 +180,53 @@ def createParent():
         "parentInfo": parentInfo
     }
 
+# 保護者編集
+@app.route("/api/schoolappParent/editParent", methods=["POST"])
+def editParent():
+    try:
+        with session_scope() as session:
+            # payloadの取得
+            event = request.get_json()
+            last_name = event['last_name']
+            first_name = event['first_name']
+            last_name_kana = event['last_name_kana']
+            first_name_kana = event['first_name_kana']
+            parent_id = event['parent_id']
+
+            # 保護者マスタにレコードを登録
+            
+            parent = session.query(Parents).\
+                filter(Parents.parent_id == parent_id).\
+                first()
+            
+            if parent:
+                parent.last_name = last_name
+                parent.first_name = first_name
+                parent.last_name_kana = last_name_kana
+                parent.first_name_kana = first_name_kana
+
+            session.add(parent)
+        session.commit()
+
+        # 登録したレコードを取得
+        parentInfo = ""
+        with session_scope() as session:
+            parent = session.query(Parents).\
+                filter(Parents.parent_id == parent_id).\
+                first()
+            parentInfo = Parents.to_dict_relationship(parent)
+
+        return {
+            "statusCode": 200,
+            "parentInfo": parentInfo
+        }
+    except Exception as e:
+        print('エラーが発生しました。')
+        print(e)
+        return {
+            "statusCode": 500,
+        }
+
 @app.route("/api/schoolappParent/searchParentByUserId", methods=["POST"])
 def searchParentByUserId():
     # userIdの取得
