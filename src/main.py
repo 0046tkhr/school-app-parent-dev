@@ -14,11 +14,15 @@ from models.m_classroom import *
 from models.m_grade import *
 from models.t_delivery_history import *
 from models.m_security_key import *
+from models.m_absence_form import *
 
 # import json
 import hashlib
 
 import datetime
+import uuid
+
+DIFF_JST_FROM_UTC = 9
 
 @contextmanager
 def session_scope():
@@ -154,7 +158,6 @@ def createParent():
         newParentId = parentIdValue + str(maxGradeId + 1).zfill(4)
 
         # 保護者マスタにレコードを登録
-    
         parent = Parents(
             parent_id = newParentId,
             last_name = last_name,
@@ -584,9 +587,9 @@ def search_latest_delivery_all():
                     and_(DeliveryHistory.delivery_division == "CLASS", DeliveryHistory.target_class.in_(classroom_id_list)),
                     and_(DeliveryHistory.delivery_division == "PERSONAL", DeliveryHistory.target_student.in_(student_id_list))
                 ),
-                DeliveryHistory.delivered_at >= fiscal_year_delivered_at
+                DeliveryHistory.delivered_at >= fiscal_year_delivered_at,
+                DeliveryHistory.delivery_status == 'DELIVERED'
             ))
-            .filter(DeliveryHistory.delivery_status == 'DELIVERED')
             .group_by(DeliveryHistory.delivery_id)
             .order_by(desc(DeliveryHistory.delivered_at))
             .all()
@@ -732,3 +735,39 @@ def search_latest_delivery_all():
     #     "statusCode": 200,
     #     "deliveries": deliveriesInfo
     # }
+
+@app.route("/api/schoolappParent/sendAbsenceForm", methods=["POST"])
+def create_absence_form():
+    NOW = datetime.datetime.utcnow() + datetime.timedelta(hours=DIFF_JST_FROM_UTC)
+    with session_scope() as session:
+        # payloadの取得
+        event = request.get_json()
+        absence_form = event['absence_form']
+
+        student_id = absence_form['student_id']
+        parent_id = absence_form['parent_id']
+        form_type = absence_form['form_type']
+        absence_at = absence_form['absence_at']
+        arrive_at = absence_form['arrive_at']
+        reason = absence_form['reason']
+        other_reason = absence_form['other_reason']
+        remarks = absence_form['remarks']
+
+        # 保護者マスタにレコードを登録
+        parent = AbsenceForm(
+            absence_id = str(uuid.uuid4()),
+            student_id = student_id,
+            parent_id = parent_id,
+            form_type = form_type,
+            reason = reason,
+            absence_at = absence_at,
+            created_at = str(NOW),
+            other_reason = other_reason,
+            arrive_at = arrive_at,
+            remarks = remarks
+        )
+        session.add(parent)
+    session.commit()
+    return {
+        "statusCode": 200
+    }
